@@ -14,33 +14,30 @@ class KalmanFilter():
         self.updated_covariance = None
         self.std_dev = 0
         self.dt = 0
-        self.I = None
-        self.H = None
-        self.R = None
+        
         self.state_transition_matrix = None
         self.std_dev = std_dev
-        self.updated_state = np.array([[initial_pose.position.x_coord],
+        self.updated_state = np.array([[initial_pose[0]],
                                       [0],
                                       [0],
-                                      [initial_pose.position.y_coord],
+                                      [initial_pose[1]],
                                       [0],
                                       [0],
-                                      [initial_pose.position.z_coord],
+                                      [initial_pose[2]],
                                       [0],
-                                      [0],
-                                      [initial_pose.orientation.yaw_pitch_roll[0]],
-                                      [0],
-                                      [initial_pose.orientation.yaw_pitch_roll[1]],
-                                      [0],
-                                      [initial_pose.orientation.yaw_pitch_roll[2]],
                                       [0]])
         print("Initial position: ", self.updated_state)
-        self.updated_covariance = np.identity(self.updated_state.shape[0])
+        self.updated_covariance = np.identity(self.updated_state.shape[0]) #dont put this to zero, otherwise the filter will diverge for some reason :(
         
         self.I = np.identity(self.updated_state.shape[0])
-        self.H = np.identity(self.updated_state.shape[0]) #this is for the case that our sensor measures everything that the state represents -> position, linear velocity, linear acceleration, orientation, orientation rate
-        self.R = np.zeros(self.H.shape, int); np.fill_diagonal(self.R, 5) #this is for the case that our sensor measures everything that the state represents -> (15x15)
-        
+        self.H = np.array([ [1, 0,  0,  0,  0,  0,  0,  0,  0],
+                            [0, 1,  0,  0,  0,  0,  0,  0,  0],
+                            [0, 0,  0,  1,  0,  0,  0,  0,  0],
+                            [0, 0,  0,  0,  1,  0,  0,  0,  0],
+                            [0, 0,  0,  0,  0,  0,  1,  0,  0],
+                            [0, 0,  0,  0,  0,  0,  0,  1,  0]])
+        #self.R = np.zeros(self.H.shape, int); np.fill_diagonal(self.R, 5) #this is for the case that our sensor measures everything that the state represents -> (15x15)
+        self.R = np.zeros((6,6), int); np.fill_diagonal(self.R, 5000)
     
         # IMM variables
         self.model_probability = None

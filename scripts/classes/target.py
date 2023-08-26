@@ -3,22 +3,27 @@ import numpy as np
 
 class Target():
 
-    def __init__(self, name, x, y, z, yaw, pitch, roll) -> None:
+    def __init__(self, name, x, y, z) -> None:
         self.name = name
-        self.x_coord = x
-        self.y_coord = y
-        self.z_coord = z
-        self.yaw = yaw
-        self.pitch = pitch
-        self.roll = roll
+
+        self.position = np.array([x, y, z])
+        self.velocity = np.array([0, 0, 0])
+        self.acceleration = np.array([0, 0, 0])
     
     def get_position(self):
-        return np.array([self.x_coord, self.y_coord, self.z_coord, self.yaw, self.pitch, self.roll])
+        return self.position
     
     def set_position(self, position):
-        self.x_coord = position[0]
-        self.y_coord = position[1]
-        self.z_coord = position[2]
-        self.yaw = position[3]
-        self.pitch = position[4]
-        self.roll = position[5]
+        self.position = position
+
+    def set_velocity(self, velocity):
+        self.velocity = velocity
+    
+    def get_velocity(self):
+        return self.velocity
+
+    def set_acceleration(self, acceleration):
+        self.acceleration = acceleration
+    
+    def get_acceleration(self):
+        return self.acceleration
