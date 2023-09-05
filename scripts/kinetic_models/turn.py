@@ -9,8 +9,8 @@ class CP_CYPR_RATE_Model(KalmanFilter):
     constant rate of yaw pitch roll.
     '''
 
-    def __init__(self,initial_pose, std_dev, name):
-        super().__init__(initial_pose, std_dev)
+    def __init__(self,initial_pose, std_dev_process_noise, name):
+        super().__init__(initial_pose, std_dev_process_noise)
         self.name = name
         
     @property
@@ -51,4 +51,4 @@ class CP_CYPR_RATE_Model(KalmanFilter):
                       [timestep                 ],
                       [0.5*np.square(timestep)  ],
                       [timestep                 ]])
-        self.process_noise_matrix = np.matmul(G, np.transpose(G)) * np.square(self.std_dev)
+        self.process_noise_matrix = np.matmul(G, np.transpose(G)) * np.square(self.std_dev_process_noise)

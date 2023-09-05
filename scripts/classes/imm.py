@@ -5,6 +5,7 @@ import math
 from kinetic_models.const_acceleration import CA_CYPR_Model
 from kinetic_models.const_velocity import CV_CYPR_Model
 from kinetic_models.turn import CP_CYPR_RATE_Model
+from classes.kalman import KalmanFilter
 
 class InteractingMultipleModel:
     '''Implementation following Anthony F. Genovese: "The Interacting Multiple Model Algorithm for
@@ -14,11 +15,12 @@ class InteractingMultipleModel:
         self.camera = camera
         self.initial_pose = initial_pose
         
-        self.const_vel_model = CV_CYPR_Model(std_dev=0, initial_pose=self.initial_pose, name = "constant velcoity")
-        self.const_accel_model = CA_CYPR_Model(std_dev=0.01, initial_pose=self.initial_pose, name = "constant acceleration")
-        self.turn_model = CP_CYPR_RATE_Model(std_dev=0.01, initial_pose=self.initial_pose, name = "turn")
+        self.kalman = KalmanFilter(std_dev_process_noise=10, initial_pose=self.initial_pose)
+        self.const_vel_model = CV_CYPR_Model(std_dev_process_noise=1, initial_pose=self.initial_pose, name = "constant velcoity")
+        #self.const_accel_model = CA_CYPR_Model(std_dev_process_noise=10, initial_pose=self.initial_pose, name = "constant acceleration")
+        #self.turn_model = CP_CYPR_RATE_Model(std_dev_process_noise=0.01, initial_pose=self.initial_pose, name = "turn")
         #self.models = [self.const_vel_model, self.const_accel_model, self.turn_model]
-        self.models = [self.const_vel_model, self.const_accel_model]
+        self.models = [self.const_vel_model]
         
         #self.state_switching_matrix = np.array([[0.55, 0.15, 0.3],
         #                                       [0.3, 0.60, 0.1],
@@ -26,18 +28,16 @@ class InteractingMultipleModel:
         
 
 
-        self.state_switching_matrix= np.array([[0.8, 0.2],
-                                               [0.2, 0.8]])
+        self.state_switching_matrix= np.array([[1.0]])
         for count, probs in enumerate(self.state_switching_matrix[0]):
             self.models[count].model_probability = probs # TODO: came up with this myself, how do you actually initialise the model probabilities?
 
         self.covariance = None
         self.combined_state = None
-        self.counter = 0 
     
-    def update_pose(self, timestep):
+    def update_pose(self, timestep, distributed = False, a = None, F = None):
+        print("IMM update - ", self.camera.name)
         measured_pose = self.camera.get_measurements()
-        ic(measured_pose)
         # Calculate Psi for each model
         for j, model_j in enumerate(self.models):
             model_j.psi = 0
@@ -46,7 +46,7 @@ class InteractingMultipleModel:
             
         # Calculate mixed states for each model
         for j, model_j in enumerate(self.models):
-            model_j.mixed_state = np.zeros((9,))
+            model_j.mixed_state = np.zeros((9,1))
             for i, model_i in enumerate(self.models):
                 mu_ij = (1/model_j.psi)*self.state_switching_matrix[i][j]*model_i.model_probability
                 model_j.mixed_state = model_j.mixed_state + (model_i.updated_state * mu_ij)
@@ -61,14 +61,13 @@ class InteractingMultipleModel:
         # Execute Kalman Filter for each model
         for model in self.models:
             model.predict(timestep)
-            model.update(measured_pose)
+            model.update(measured_pose, distributed, a, F)
 
         # Update likelihood for each model
         for j, model_j in enumerate(self.models):
             Z_j = measured_pose - model_j.H @ model_j.predicted_state # TODO: check if H@x is correct or if it only needs x
             S_j = model_j.H @ model_j.predicted_covariance @ np.transpose(model_j.H) + model_j.R
             model_j.likelihood = (1/np.sqrt(np.linalg.det(2*math.pi*S_j))) * math.exp(-0.5 * np.transpose(Z_j) @ np.linalg.inv(S_j) @ Z_j)
-            ic(model_j.likelihood)
 
         # Update probability for each model
         for j, model_j in enumerate(self.models):
@@ -76,7 +75,6 @@ class InteractingMultipleModel:
             for i, model_i in enumerate(self.models):
                 c = c + (model_i.likelihood*model_i.psi)
             model_j.model_probability = (1/c)*model_j.likelihood*model_j.psi
-            ic(model_j.model_probability)
 
         # Combine state estimates to combined state
         self.combined_state = np.zeros((9,1))
@@ -86,10 +84,17 @@ class InteractingMultipleModel:
         # Combined covariance
         self.covariance = np.zeros((9,9))
         for j, model_j in enumerate(self.models):
-            self.covariance = self.covariance + (model_j.model_probability * (model_j.updated_covariance + (model_j.updated_state - self.combined_state) @ np.transpose(model_j.updated_state - self.combined_state)))
-        
+            self.covariance = self.covariance + (model_j.model_probability * (model_j.updated_covariance + (self.combined_state - model_j.updated_state) @ np.transpose(self.combined_state - model_j.updated_state)))
+        ic(self.combined_state)
         ic(self.covariance)
-        self.counter = self.counter + 1
-        #if self.counter == 2:
-        #    exit()
+        
         return self.combined_state.flatten()
+    
+    def exchange_messages(self):
+        # send messages to neighbors
+        for cam in self.camera.neighbors:
+            cam.receive_message(self.camera.get_message())
+        # receive messages from neighbors
+        for cam in self.camera.neighbors:
+            self.camera.receive_message(cam.get_message())
+        

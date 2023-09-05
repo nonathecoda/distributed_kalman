@@ -7,8 +7,8 @@ class CA_CYPR_Model(KalmanFilter):
     constant acceleration,
     constant yaw pitch roll angles.
     '''
-    def __init__(self, std_dev, initial_pose, name):
-        super().__init__(initial_pose, std_dev)
+    def __init__(self, std_dev_process_noise, initial_pose, name):
+        super().__init__(initial_pose, std_dev_process_noise)
         self.name = name
         
     @property
@@ -37,6 +37,6 @@ class CA_CYPR_Model(KalmanFilter):
                         [(1/6)*np.power(timestep, 3)],
                         [0.5*np.square(timestep)    ],
                         [timestep                   ]])
-        self.process_noise_matrix = np.matmul(G, np.transpose(G)) * np.square(self.std_dev)
+        self.process_noise_matrix = np.matmul(G, np.transpose(G)) * np.square(self.std_dev_process_noise)
     
    

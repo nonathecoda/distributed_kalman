@@ -7,8 +7,8 @@ class CV_CYPR_Model(KalmanFilter):
     constant velocity,
     constant yaw pitch roll angles.
     '''
-    def __init__(self, std_dev, initial_pose, name):
-        super().__init__(initial_pose, std_dev)
+    def __init__(self, std_dev_process_noise, initial_pose, name):
+        super().__init__(initial_pose, std_dev_process_noise)
         self.name = name
         
     @property
@@ -17,7 +17,6 @@ class CV_CYPR_Model(KalmanFilter):
 
     @dt.setter
     def dt(self, timestep):
-                
         self.state_transition_matrix =  np.array([[1,    timestep,       0,     0,      0,          0,              0,      0,          0],
                                                   [0,    1,              0,     0,      0,          0,              0,      0,          0],
                                                   [0,    0,              0,     0,      0,          0,              0,      0,          0],
@@ -37,7 +36,7 @@ class CV_CYPR_Model(KalmanFilter):
                       [0.5*np.square(timestep)  ],
                       [timestep                 ],
                       [1                        ]])
-        self.process_noise_matrix = np.matmul(G, np.transpose(G)) * np.square(self.std_dev)
+        self.process_noise_matrix = (G @ np.transpose(G)) * np.square(self.std_dev_process_noise)
     
     
    

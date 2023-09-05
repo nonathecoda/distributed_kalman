@@ -11,6 +11,12 @@ class Camera():
         self.position = position
         self.position_measurement = None
         self.velocity_measurement = None
+        self.neighbors = []
+        self.avg_a = None
+        self.avg_F = None
+
+        self.received_a = []
+        self.received_F = []
 
         self.imm = InteractingMultipleModel(camera = self, initial_pose=initial_target_pose)
 
@@ -30,3 +36,27 @@ class Camera():
                                 self.position_measurement[2],
                                 self.velocity_measurement[2]])
         return measurement.reshape((6,1))
+    
+    def send_messages(self, a, F):
+        # TODO: implement this
+        if a == None and F == None:
+            a = np.transpose(self.imm.kalman.H) @ np.linalg.inv(self.imm.kalman.R) @ self.get_measurements()
+            F = np.transpose(self.imm.kalman.H) @ np.linalg.inv(self.imm.kalman.R) @ self.imm.kalman.H
+            self.received_a.append(a)
+            self.received_F.append(F)
+        else:
+            a = a
+            F = F
+        for n in self.neighbors:
+            n.receive_message(a, F)
+    
+    def receive_message(self, a, F):
+        self.received_a.append(a)
+        self.received_F.append(F)
+
+    def calculate_average_consensus(self):
+        self.avg_a = np.mean(self.received_a)
+        self.avg_F = np.mean(self.received_F)
+
+        self.received_a = []
+        self.received_F = []

@@ -2,21 +2,22 @@ from icecream import icecream
 import numpy as np
 from icecream import ic
 
+
 class KalmanFilter():
     '''
     Best explanation: https://www.cbcity.de/das-kalman-filter-einfach-erklaert-teil-2
     '''
 
-    def __init__(self, initial_pose, std_dev) -> None:
+    def __init__(self, initial_pose, std_dev_process_noise) -> None:
         self.predicted_state = None
         self.predicted_covariance = None
         self.updated_state = None
         self.updated_covariance = None
-        self.std_dev = 0
+        self.std_dev_process_noise = 0
         self.dt = 0
         
         self.state_transition_matrix = None
-        self.std_dev = std_dev
+        self.std_dev_process_noise = std_dev_process_noise
         self.updated_state = np.array([[initial_pose[0]],
                                       [0],
                                       [0],
@@ -46,15 +47,18 @@ class KalmanFilter():
         self.psi = 0
         self.likelihood = None
 
-    
-
     def predict(self, dt):
         self.dt = dt
-        self.predicted_state = self.state_transition_matrix @ self.updated_state
-        self.predicted_covariance = self.state_transition_matrix @ self.updated_covariance @ np.transpose(self.state_transition_matrix) + self.process_noise_matrix
+        self.predicted_state = self.state_transition_matrix @ self.mixed_state
+        self.predicted_covariance = (self.state_transition_matrix @ self.mixed_covariance @ np.transpose(self.state_transition_matrix)) + self.process_noise_matrix
 
-    def update(self, z):
+    def update(self, z, distributed, a = None, F = None):
+        if distributed == True:
+            np.set_printoptions(suppress=True, precision=20)
+            self.updated_covariance = np.linalg.inv(self.predicted_covariance + F)
+            self.updated_state = self.updated_covariance @ (self.predicted_covariance @ self.predicted_state + a)
+        elif distributed == False:
+            K = self.predicted_covariance @ np.transpose(self.H) @ np.linalg.inv(self.H @ self.predicted_covariance @ np.transpose(self.H) + self.R)
+            self.updated_state = self.predicted_state + K @ (z - self.H @ self.predicted_state)
+            self.updated_covariance = (self.I - K @ self.H) @ self.predicted_covariance
 
-        K = self.predicted_covariance @ np.transpose(self.H) @ np.linalg.inv(self.H @ self.predicted_covariance @ np.transpose(self.H) + self.R)
-        self.updated_state = self.predicted_state + K @ (z - self.H @ self.predicted_state)
-        self.updated_covariance = (self.I - K @ self.H) @ self.predicted_covariance
