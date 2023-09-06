@@ -88,7 +88,13 @@ class Main():
             # calculate average consensus
             if self.distributed == True:
                 consensus_reached = False
+                round = 0
                 while consensus_reached == False:
+                    print("Distributed consensus round " + str(round))
+                    if round == 100:
+                        print("Consensus not reached after 100 rounds")
+                        exit()
+                    round += 1
                     consensus_reached = True
                     for cam in self.cameras:
                         cam.send_messages(cam.avg_a, cam.avg_F)
@@ -135,7 +141,7 @@ class Main():
         return cameras
 
 if __name__ == '__main__':
-    n_cameras = 3
+    n_cameras = 4
     path = np.zeros((3, 3000), dtype = float)
     for i in range(0, path.shape[1]):
         path[0, i] = i/6 #x
