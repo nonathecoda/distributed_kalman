@@ -90,8 +90,13 @@ class Main():
             # calculate average consensus
             if self.distributed == True:
                 consensus_reached = False
+                round = 0
                 while consensus_reached == False:
-                    print("Distributed consensus")
+                    print("Distributed consensus round " + str(round))
+                    if round == 100:
+                        print("Consensus not reached after 100 rounds")
+                        exit()
+                    round += 1
                     consensus_reached = True
                     for cam in self.cameras:
                         cam.send_messages(cam.avg_a, cam.avg_F)
@@ -99,14 +104,13 @@ class Main():
                         cam.calculate_average_consensus()
                     for cam in self.cameras:
                         for neighbor in cam.neighbors:
-                            if not np.array_equal(neighbor.avg_a, cam.avg_a):
+                            if not np.allclose(neighbor.avg_a, cam.avg_a, atol = 0.000000000000000000000004):
                                 consensus_reached = False
-                            if not np.array_equal(neighbor.avg_F, cam.avg_F):
+                            if not np.allclose(neighbor.avg_F, cam.avg_F,  atol = 0.000000000000000000000004):
                                 consensus_reached = False
 
             for cam in self.cameras:
                 measured_pose = cam.get_measurements()
-                ic(measured_pose)
                 cam.imm.const_vel_model.predict(timestep)
                 cam.imm.const_vel_model.update(z = measured_pose, distributed = self.distributed, a = cam.avg_a, F = cam.avg_F)
                 
@@ -129,14 +133,14 @@ class Main():
         # make following and precedenting cameras neighbors to each camera
         if n_cameras > 2:
             for index, cam in enumerate(cameras):
-                if (i-1) < 0:
+                if (index) == 0:
                     cam.neighbors.append(cameras[-1])
                 else:
-                    cam.neighbors.append(cameras[i-1])
-                if (i+1) <= n_cameras:
+                    cam.neighbors.append(cameras[index-1])
+                if (index) == n_cameras-1:
                     cam.neighbors.append(cameras[0])
                 else:
-                    cam.neighbors.append(cameras[i+1])
+                    cam.neighbors.append(cameras[index+1])
         if n_cameras == 2:
             cameras[0].neighbors.append(cameras[1])
             cameras[1].neighbors.append(cameras[0])
@@ -144,13 +148,13 @@ class Main():
 
 if __name__ == '__main__':
     print("This is the no-imm branch")
-    n_cameras = 2
+    n_cameras = 4
     path = np.zeros((3, 3000), dtype = float)
     for i in range(0, path.shape[1]):
         path[0, i] = i/6 #x
         path[1, i] = i/4 #y
         path[2, i] = i/8 #z
     
-    sensor_accuracy = 0.1
+    sensor_accuracy = 8
         
     Main(path = path, n_cameras = n_cameras, sensor_accuracy = sensor_accuracy, n_frames = path.shape[1])

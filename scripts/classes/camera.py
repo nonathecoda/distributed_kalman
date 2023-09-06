@@ -40,13 +40,12 @@ class Camera():
     def send_messages(self, a, F):
         # TODO: implement this
         if a is None and F is None:
+            print('a and f are none')
             a = np.transpose(self.imm.const_vel_model.H) @ np.linalg.inv(self.imm.const_vel_model.R) @ self.get_measurements()
             F = np.transpose(self.imm.const_vel_model.H) @ np.linalg.inv(self.imm.const_vel_model.R) @ self.imm.const_vel_model.H
-            self.received_a.append(a)
-            self.received_F.append(F)
-        else:
-            a = a
-            F = F
+        self.received_a.append(a)
+        self.received_F.append(F)
+        
         for n in self.neighbors:
             n.receive_message(a, F)
     
@@ -55,7 +54,7 @@ class Camera():
         self.received_F.append(F)
 
     def calculate_average_consensus(self):
-        self.avg_a = np.sum(self.received_a, axis=0) / 2 #np.mean(self.received_a)
-        self.avg_F = np.sum(self.received_F, axis=0) / 2
+        self.avg_a = np.sum(self.received_a, axis=0) / len(self.received_a)
+        self.avg_F = np.sum(self.received_F, axis=0) / len(self.received_F)
         self.received_a = []
         self.received_F = []
