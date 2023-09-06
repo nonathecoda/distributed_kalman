@@ -65,34 +65,34 @@ class Plotter():
         # subplot z position
         fig.add_subplot(3, 3, 3)
         plt.axis([0, 3000, -50, 400])
+        self.ln_z_r, = plt.plot(self.time, self.z_r, '-', label = 'z data real')
         self.ln_z_m, = plt.plot(self.time, self.z_m, '-', label = 'z data measured')
         self.ln_z_f, = plt.plot(self.time, self.z_f, '-', label = 'z data filtered')
-        self.ln_z_r, = plt.plot(self.time, self.z_r, '-', label = 'z data real')
-        plt.legend(handles=[self.ln_z_m, self.ln_z_f, self.ln_z_r])
+        plt.legend(handles=[self.ln_z_r, self.ln_z_m, self.ln_z_f])
 
         # subplot x velocity
         fig.add_subplot(3, 3, 4)
         plt.axis([0, 3000, -20, 20])
+        self.ln_vx_r, = plt.plot(self.time, self.vx_r, '-', label = 'x velocity real')
         self.ln_vx_m, = plt.plot(self.time, self.vx_m, '-', label = 'x velocity measured')
         self.ln_vx_f, = plt.plot(self.time, self.vx_f, '-', label = 'x velocity filtered')
-        self.ln_vx_r, = plt.plot(self.time, self.vx_r, '-', label = 'x velocity real')
-        plt.legend(handles = [self.ln_vx_m, self.ln_vx_r, self.ln_vx_f])
+        plt.legend(handles = [self.ln_vx_r, self.ln_vx_m, self.ln_vx_f])
 
         # subplot y velocity
         fig.add_subplot(3, 3, 5)
         plt.axis([0, 3000, -20, 20])
+        self.ln_vy_r, = plt.plot(self.time, self.vy_r, '-', label = 'y velocity real')
         self.ln_vy_m, = plt.plot(self.time, self.vy_m, '-', label = 'y velocity measured')
         self.ln_vy_f, = plt.plot(self.time, self.vy_f, '-', label = 'y velocity filtered')
-        self.ln_vy_r, = plt.plot(self.time, self.vy_r, '-', label = 'y velocity real')
-        plt.legend(handles=[self.ln_vy_m, self.ln_vy_r, self.ln_vy_f])
+        plt.legend(handles=[self.ln_vy_r, self.ln_vy_m, self.ln_vy_f])
 
         # subplot z velocity
         fig.add_subplot(3, 3, 6)
         plt.axis([0, 3000, -20, 20])
+        self.ln_vz_r, = plt.plot(self.time, self.vz_r, '-', label = 'z velocity real')
         self.ln_vz_m, = plt.plot(self.time, self.vz_m, '-', label = 'z velocity measured')
         self.ln_vz_f, = plt.plot(self.time, self.vz_f, '-', label = 'z velocity filtered')
-        self.ln_vz_r, = plt.plot(self.time, self.vz_r, '-', label = 'z velocity real')
-        plt.legend(handles=[self.ln_vz_m, self.ln_vz_r, self.ln_vz_f])
+        plt.legend(handles=[self.ln_vz_r, self.ln_vz_m, self.ln_vz_f])
 
         # subplot error in x
         fig.add_subplot(3, 3, 7)

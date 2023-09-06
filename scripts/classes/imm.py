@@ -66,7 +66,6 @@ class InteractingMultipleModel:
 
         # Update likelihood for each model
         for j, model_j in enumerate(self.models):
-            ic(model_j.predicted_state)
             Z_j = measured_pose - model_j.H @ model_j.predicted_state # TODO: check if H@x is correct or if it only needs x
             S_j = model_j.H @ model_j.predicted_covariance @ np.transpose(model_j.H) + model_j.R
             model_j.likelihood = (1/np.sqrt(np.linalg.det(2*math.pi*S_j))) * np.exp(-0.5 * np.transpose(Z_j) @ np.linalg.inv(S_j) @ Z_j)
@@ -88,7 +87,6 @@ class InteractingMultipleModel:
         for j, model_j in enumerate(self.models):
             self.covariance = self.covariance + (model_j.model_probability * (model_j.updated_covariance + (self.combined_state - model_j.updated_state) @ np.transpose(self.combined_state - model_j.updated_state)))
         ic(self.combined_state)
-        ic(self.covariance)
         if has_negative_diagonal(self.covariance):
             print("combined covariance has negative diagonal")
             exit()

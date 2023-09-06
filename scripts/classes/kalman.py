@@ -57,12 +57,8 @@ class KalmanFilter():
 
     def update(self, z, distributed, a = None, F = None):
         if distributed == True:
-            ic(np.linalg.det(self.predicted_covariance))
-            ic(self.predicted_covariance)
-            ic(np.linalg.inv(self.predicted_covariance))
             self.updated_covariance = np.linalg.inv(np.linalg.inv(self.predicted_covariance) + F)
             self.updated_state = self.updated_state + self.updated_covariance @ (a - F @ self.predicted_state)
-            ic(self.updated_covariance)
             #self.updated_state = self.updated_covariance @ (self.predicted_covariance @ self.predicted_state + a)
         elif distributed == False:
             K = self.predicted_covariance @ np.transpose(self.H) @ np.linalg.inv(self.H @ self.predicted_covariance @ np.transpose(self.H) + self.R)
