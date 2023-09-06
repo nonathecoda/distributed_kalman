@@ -16,11 +16,11 @@ class InteractingMultipleModel:
         self.initial_pose = initial_pose
         
         self.kalman = KalmanFilter(std_dev_process_noise=10, initial_pose=self.initial_pose)
-        self.const_vel_model = CV_CYPR_Model(std_dev_process_noise=1, initial_pose=self.initial_pose, name = "constant velcoity")
-        #self.const_accel_model = CA_CYPR_Model(std_dev_process_noise=10, initial_pose=self.initial_pose, name = "constant acceleration")
+        #self.const_vel_model = CV_CYPR_Model(std_dev_process_noise=0.1, initial_pose=self.initial_pose, name = "constant velcoity")
+        self.const_accel_model = CA_CYPR_Model(std_dev_process_noise=0.1, initial_pose=self.initial_pose, name = "constant acceleration")
         #self.turn_model = CP_CYPR_RATE_Model(std_dev_process_noise=0.01, initial_pose=self.initial_pose, name = "turn")
         #self.models = [self.const_vel_model, self.const_accel_model, self.turn_model]
-        self.models = [self.const_vel_model]
+        self.models = [self.const_accel_model]
         
         #self.state_switching_matrix = np.array([[0.55, 0.15, 0.3],
         #                                       [0.3, 0.60, 0.1],
@@ -57,6 +57,13 @@ class InteractingMultipleModel:
             for i, model_i in enumerate(self.models):
                 mu_ij = (1/model_j.psi)*self.state_switching_matrix[i][j]*model_i.model_probability
                 model_j.mixed_covariance = model_j.mixed_covariance + (mu_ij * (model_i.updated_covariance + ((model_i.updated_state - model_j.mixed_state) @ np.transpose(model_i.updated_state - model_j.mixed_state))))
+                ic(model_i.updated_covariance)
+                ic(model_i.updated_state)
+                ic(model_j.mixed_state)
+                ic(mu_ij)
+                ic(model_j.psi)
+                ic(self.state_switching_matrix[i][j])
+                ic(model_i.model_probability)
 
         # Execute Kalman Filter for each model
         for model in self.models:
@@ -68,6 +75,10 @@ class InteractingMultipleModel:
             Z_j = measured_pose - model_j.H @ model_j.predicted_state # TODO: check if H@x is correct or if it only needs x
             S_j = model_j.H @ model_j.predicted_covariance @ np.transpose(model_j.H) + model_j.R
             model_j.likelihood = (1/np.sqrt(np.linalg.det(2*math.pi*S_j))) * math.exp(-0.5 * np.transpose(Z_j) @ np.linalg.inv(S_j) @ Z_j)
+            ic(measured_pose)
+            ic(model_j.predicted_state)
+            ic(Z_j)
+            ic(S_j)
 
         # Update probability for each model
         for j, model_j in enumerate(self.models):
@@ -87,7 +98,7 @@ class InteractingMultipleModel:
             self.covariance = self.covariance + (model_j.model_probability * (model_j.updated_covariance + (self.combined_state - model_j.updated_state) @ np.transpose(self.combined_state - model_j.updated_state)))
         ic(self.combined_state)
         ic(self.covariance)
-        
+
         return self.combined_state.flatten()
     
     def exchange_messages(self):

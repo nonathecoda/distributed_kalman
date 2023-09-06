@@ -51,10 +51,15 @@ class KalmanFilter():
         self.dt = dt
         self.predicted_state = self.state_transition_matrix @ self.mixed_state
         self.predicted_covariance = (self.state_transition_matrix @ self.mixed_covariance @ np.transpose(self.state_transition_matrix)) + self.process_noise_matrix
+        ic(self.state_transition_matrix)
+        ic(self.mixed_covariance)
+        ic(self.process_noise_matrix)
+        ic(self.predicted_covariance)
 
     def update(self, z, distributed, a = None, F = None):
         if distributed == True:
-            np.set_printoptions(suppress=True, precision=20)
+            ic(F)
+            ic(np.linalg.det(self.predicted_covariance))
             self.updated_covariance = np.linalg.inv(self.predicted_covariance + F)
             self.updated_state = self.updated_covariance @ (self.predicted_covariance @ self.predicted_state + a)
         elif distributed == False:

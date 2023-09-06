@@ -15,6 +15,11 @@ from kinetic_models.const_velocity import CV_CYPR_Model
 class Main():
 
     def __init__(self, path = None, n_frames = 5, n_cameras = 1, sensor_accuracy = 5) -> None:
+        
+        np.random.seed(0)
+        np.set_printoptions(suppress=True, precision=30)
+        np.seterr(all='raise')
+        
         self.start_time = time.monotonic()
         self.path = path
         if self.path is None:
@@ -130,6 +135,7 @@ class Main():
         return cameras
 
 if __name__ == '__main__':
+    print("This is the no-imm branch")
     n_cameras = 2
     path = np.zeros((3, 3000), dtype = float)
     for i in range(0, path.shape[1]):
