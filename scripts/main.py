@@ -96,9 +96,9 @@ class Main():
                         cam.calculate_average_consensus()
                     for cam in self.cameras:
                         for neighbor in cam.neighbors:
-                            if not np.array_equal(neighbor.avg_a, cam.avg_a):
+                            if not np.allclose(neighbor.avg_a, cam.avg_a, atol = 1e-08):
                                 consensus_reached = False
-                            if not np.array_equal(neighbor.avg_F, cam.avg_F):
+                            if not np.allclose(neighbor.avg_F, cam.avg_F,  atol = 1e-08):
                                 consensus_reached = False
 
             for cam in self.cameras:
@@ -121,21 +121,21 @@ class Main():
         # make following and precedenting cameras neighbors to each camera
         if n_cameras > 2:
             for index, cam in enumerate(cameras):
-                if (i-1) < 0:
+                if (index) == 0:
                     cam.neighbors.append(cameras[-1])
                 else:
-                    cam.neighbors.append(cameras[i-1])
-                if (i+1) <= n_cameras:
+                    cam.neighbors.append(cameras[index-1])
+                if (index) == n_cameras-1:
                     cam.neighbors.append(cameras[0])
                 else:
-                    cam.neighbors.append(cameras[i+1])
+                    cam.neighbors.append(cameras[index+1])
         if n_cameras == 2:
             cameras[0].neighbors.append(cameras[1])
             cameras[1].neighbors.append(cameras[0])
         return cameras
 
 if __name__ == '__main__':
-    n_cameras = 2
+    n_cameras = 3
     path = np.zeros((3, 3000), dtype = float)
     for i in range(0, path.shape[1]):
         path[0, i] = i/6 #x

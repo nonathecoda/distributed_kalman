@@ -42,11 +42,9 @@ class Camera():
         if a is None and F is None:
             a = np.transpose(self.imm.kalman.H) @ np.linalg.inv(self.imm.kalman.R) @ self.get_measurements()
             F = np.transpose(self.imm.kalman.H) @ np.linalg.inv(self.imm.kalman.R) @ self.imm.kalman.H
-            self.received_a.append(a)
-            self.received_F.append(F)
-        else:
-            a = a
-            F = F
+        self.received_a.append(a)
+        self.received_F.append(F)
+        
         for n in self.neighbors:
             n.receive_message(a, F)
     

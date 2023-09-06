@@ -86,7 +86,7 @@ class InteractingMultipleModel:
         self.covariance = np.zeros((9,9))
         for j, model_j in enumerate(self.models):
             self.covariance = self.covariance + (model_j.model_probability * (model_j.updated_covariance + (self.combined_state - model_j.updated_state) @ np.transpose(self.combined_state - model_j.updated_state)))
-        ic(self.combined_state)
+    
         if has_negative_diagonal(self.covariance):
             print("combined covariance has negative diagonal")
             exit()
