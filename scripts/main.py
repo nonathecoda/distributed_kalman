@@ -15,6 +15,10 @@ from kinetic_models.const_velocity import CV_CYPR_Model
 class Main():
 
     def __init__(self, path = None, n_frames = 5, n_cameras = 1, sensor_accuracy = 5) -> None:
+        np.set_printoptions(suppress=True, precision=20)
+        np.seterr(all='raise')
+        np.random.seed(0)
+
         self.start_time = time.monotonic()
         self.path = path
         if self.path is None:
@@ -92,14 +96,15 @@ class Main():
                         cam.calculate_average_consensus()
                     for cam in self.cameras:
                         for neighbor in cam.neighbors:
-                            if neighbor.avg_a != cam.avg_a:
+                            if not np.array_equal(neighbor.avg_a, cam.avg_a):
                                 consensus_reached = False
-                            if neighbor.avg_F != cam.avg_F:
+                            if not np.array_equal(neighbor.avg_F, cam.avg_F):
                                 consensus_reached = False
 
             for cam in self.cameras:
                 filtered_pose = cam.imm.update_pose(timestep = timestep, distributed = self.distributed, a = cam.avg_a, F = cam.avg_F)
-                
+                cam.avg_a = None
+                cam.avg_F = None
 
             self.plotter.update_plot(cam.get_measurements().flatten(), filtered_pose.flatten(), self.target.get_position(), self.target.get_velocity(), self.last_timestamp)
   

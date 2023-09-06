@@ -39,7 +39,7 @@ class Camera():
     
     def send_messages(self, a, F):
         # TODO: implement this
-        if a == None and F == None:
+        if a is None and F is None:
             a = np.transpose(self.imm.kalman.H) @ np.linalg.inv(self.imm.kalman.R) @ self.get_measurements()
             F = np.transpose(self.imm.kalman.H) @ np.linalg.inv(self.imm.kalman.R) @ self.imm.kalman.H
             self.received_a.append(a)
@@ -55,8 +55,7 @@ class Camera():
         self.received_F.append(F)
 
     def calculate_average_consensus(self):
-        self.avg_a = np.mean(self.received_a)
-        self.avg_F = np.mean(self.received_F)
-
+        self.avg_a = np.sum(self.received_a, axis=0) / len(self.received_a) #np.mean(self.received_a)
+        self.avg_F = np.sum(self.received_F, axis=0) / len(self.received_a)
         self.received_a = []
         self.received_F = []

@@ -52,7 +52,7 @@ class Plotter():
         self.ln_x_m, = plt.plot(self.time, self.x_m, '-', label = 'x data measured')
         self.ln_x_f, = plt.plot(self.time, self.x_f, '-', label = 'x data filtered')
         self.ln_x_r, = plt.plot(self.time, self.x_r, '-', label = 'x data real')
-        plt.legend(handles=[self.ln_x_m, self.ln_x_f, self.ln_x_f])
+        plt.legend(handles=[self.ln_x_m, self.ln_x_f, self.ln_x_r])
 
         # subplot y position
         fig.add_subplot(3, 3, 2)
@@ -74,24 +74,24 @@ class Plotter():
         fig.add_subplot(3, 3, 4)
         plt.axis([0, 3000, -20, 20])
         self.ln_vx_m, = plt.plot(self.time, self.vx_m, '-', label = 'x velocity measured')
-        self.ln_vx_r, = plt.plot(self.time, self.vx_r, '-', label = 'x velocity real')
         self.ln_vx_f, = plt.plot(self.time, self.vx_f, '-', label = 'x velocity filtered')
+        self.ln_vx_r, = plt.plot(self.time, self.vx_r, '-', label = 'x velocity real')
         plt.legend(handles = [self.ln_vx_m, self.ln_vx_r, self.ln_vx_f])
 
         # subplot y velocity
         fig.add_subplot(3, 3, 5)
         plt.axis([0, 3000, -20, 20])
         self.ln_vy_m, = plt.plot(self.time, self.vy_m, '-', label = 'y velocity measured')
-        self.ln_vy_r, = plt.plot(self.time, self.vy_r, '-', label = 'y velocity real')
         self.ln_vy_f, = plt.plot(self.time, self.vy_f, '-', label = 'y velocity filtered')
+        self.ln_vy_r, = plt.plot(self.time, self.vy_r, '-', label = 'y velocity real')
         plt.legend(handles=[self.ln_vy_m, self.ln_vy_r, self.ln_vy_f])
 
         # subplot z velocity
         fig.add_subplot(3, 3, 6)
         plt.axis([0, 3000, -20, 20])
         self.ln_vz_m, = plt.plot(self.time, self.vz_m, '-', label = 'z velocity measured')
-        self.ln_vz_r, = plt.plot(self.time, self.vz_r, '-', label = 'z velocity real')
         self.ln_vz_f, = plt.plot(self.time, self.vz_f, '-', label = 'z velocity filtered')
+        self.ln_vz_r, = plt.plot(self.time, self.vz_r, '-', label = 'z velocity real')
         plt.legend(handles=[self.ln_vz_m, self.ln_vz_r, self.ln_vz_f])
 
         # subplot error in x

@@ -15,12 +15,12 @@ class InteractingMultipleModel:
         self.camera = camera
         self.initial_pose = initial_pose
         
-        self.kalman = KalmanFilter(std_dev_process_noise=10, initial_pose=self.initial_pose)
-        self.const_vel_model = CV_CYPR_Model(std_dev_process_noise=1, initial_pose=self.initial_pose, name = "constant velcoity")
-        #self.const_accel_model = CA_CYPR_Model(std_dev_process_noise=10, initial_pose=self.initial_pose, name = "constant acceleration")
+        self.kalman = KalmanFilter(std_dev_process_noise=0.1, initial_pose=self.initial_pose)
+        #self.const_vel_model = CV_CYPR_Model(std_dev_process_noise=1, initial_pose=self.initial_pose, name = "constant velcoity")
+        self.const_accel_model = CA_CYPR_Model(std_dev_process_noise=0.1, initial_pose=self.initial_pose, name = "constant acceleration")
         #self.turn_model = CP_CYPR_RATE_Model(std_dev_process_noise=0.01, initial_pose=self.initial_pose, name = "turn")
         #self.models = [self.const_vel_model, self.const_accel_model, self.turn_model]
-        self.models = [self.const_vel_model]
+        self.models = [self.const_accel_model]
         
         #self.state_switching_matrix = np.array([[0.55, 0.15, 0.3],
         #                                       [0.3, 0.60, 0.1],
@@ -38,6 +38,7 @@ class InteractingMultipleModel:
     def update_pose(self, timestep, distributed = False, a = None, F = None):
         print("IMM update - ", self.camera.name)
         measured_pose = self.camera.get_measurements()
+        ic(measured_pose)
         # Calculate Psi for each model
         for j, model_j in enumerate(self.models):
             model_j.psi = 0
@@ -65,9 +66,10 @@ class InteractingMultipleModel:
 
         # Update likelihood for each model
         for j, model_j in enumerate(self.models):
+            ic(model_j.predicted_state)
             Z_j = measured_pose - model_j.H @ model_j.predicted_state # TODO: check if H@x is correct or if it only needs x
             S_j = model_j.H @ model_j.predicted_covariance @ np.transpose(model_j.H) + model_j.R
-            model_j.likelihood = (1/np.sqrt(np.linalg.det(2*math.pi*S_j))) * math.exp(-0.5 * np.transpose(Z_j) @ np.linalg.inv(S_j) @ Z_j)
+            model_j.likelihood = (1/np.sqrt(np.linalg.det(2*math.pi*S_j))) * np.exp(-0.5 * np.transpose(Z_j) @ np.linalg.inv(S_j) @ Z_j)
 
         # Update probability for each model
         for j, model_j in enumerate(self.models):
@@ -87,14 +89,17 @@ class InteractingMultipleModel:
             self.covariance = self.covariance + (model_j.model_probability * (model_j.updated_covariance + (self.combined_state - model_j.updated_state) @ np.transpose(self.combined_state - model_j.updated_state)))
         ic(self.combined_state)
         ic(self.covariance)
+        if has_negative_diagonal(self.covariance):
+            print("combined covariance has negative diagonal")
+            exit()
         
         return self.combined_state.flatten()
     
-    def exchange_messages(self):
-        # send messages to neighbors
-        for cam in self.camera.neighbors:
-            cam.receive_message(self.camera.get_message())
-        # receive messages from neighbors
-        for cam in self.camera.neighbors:
-            self.camera.receive_message(cam.get_message())
-        
+def has_negative_diagonal(matrix):
+
+    # Iterate through the diagonal elements
+    for i in range(len(matrix)):
+        if matrix[i][i] < 0:
+            return True  # Found a negative value on the diagonal
+
+    return False  # No negative values on the diagonal
