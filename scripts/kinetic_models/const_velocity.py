@@ -17,25 +17,19 @@ class CV_CYPR_Model(KalmanFilter):
 
     @dt.setter
     def dt(self, timestep):
-        self.state_transition_matrix =  np.array([[1,    timestep,       0,     0,      0,          0,              0,      0,          0],
-                                                  [0,    1,              0,     0,      0,          0,              0,      0,          0],
-                                                  [0,    0,              0,     0,      0,          0,              0,      0,          0],
-                                                  [0,    0,              0,     1,      timestep,   0,              0,      0,          0],
-                                                  [0,    0,              0,     0,      1,          0,              0,      0,          0],                                                 
-                                                  [0,    0,              0,     0,      0,          0,              0,      0,          0],
-                                                  [0,    0,              0,     0,      0,          0,              1,      timestep,   0],
-                                                  [0,    0,              0,     0,      0,          0,              0,      1,          0],
-                                                  [0,    0,              0,     0,      0,          0,              0,      0,          0]])
+        self.state_transition_matrix =  np.array([[1,    timestep,     0,      0,          0,      0],
+                                                  [0,    1,            0,      0,          0,      0],
+                                                  [0,    0,            1,      timestep,   0,      0],
+                                                  [0,    0,            0,      1,          0,      0],
+                                                  [0,    0,            0,      0,          1,      timestep],
+                                                  [0,    0,            0,      0,          0,      1]])
 
         G = np.array([[0.5*np.square(timestep)  ],
                       [timestep                 ],
-                      [1                        ],
                       [0.5*np.square(timestep)  ],
                       [timestep                 ],
-                      [1                        ],
                       [0.5*np.square(timestep)  ],
-                      [timestep                 ],
-                      [1                        ]])
+                      [timestep                 ]])
         self.process_noise_matrix = (G @ np.transpose(G)) * np.square(self.std_dev_process_noise)
     
     

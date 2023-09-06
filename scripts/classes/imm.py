@@ -15,8 +15,8 @@ class InteractingMultipleModel:
         self.camera = camera
         self.initial_pose = initial_pose
         
-        self.kalman = KalmanFilter(std_dev_process_noise=10, initial_pose=self.initial_pose)
-        #self.const_vel_model = CV_CYPR_Model(std_dev_process_noise=0.1, initial_pose=self.initial_pose, name = "constant velcoity")
+        self.kalman = KalmanFilter(std_dev_process_noise=0.1, initial_pose=self.initial_pose)
+        self.const_vel_model = CV_CYPR_Model(std_dev_process_noise=0.1, initial_pose=self.initial_pose, name = "constant velcoity")
         self.const_accel_model = CA_CYPR_Model(std_dev_process_noise=0.1, initial_pose=self.initial_pose, name = "constant acceleration")
         #self.turn_model = CP_CYPR_RATE_Model(std_dev_process_noise=0.01, initial_pose=self.initial_pose, name = "turn")
         #self.models = [self.const_vel_model, self.const_accel_model, self.turn_model]
@@ -100,12 +100,3 @@ class InteractingMultipleModel:
         ic(self.covariance)
 
         return self.combined_state.flatten()
-    
-    def exchange_messages(self):
-        # send messages to neighbors
-        for cam in self.camera.neighbors:
-            cam.receive_message(self.camera.get_message())
-        # receive messages from neighbors
-        for cam in self.camera.neighbors:
-            self.camera.receive_message(cam.get_message())
-        

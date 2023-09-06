@@ -48,7 +48,7 @@ class Plotter():
 
         # subplot x position
         fig.add_subplot(3, 3, 1)
-        plt.axis([0, 3000, 0, 750])
+        plt.axis([0, 3000, -3000, 3000])
         self.ln_x_m, = plt.plot(self.time, self.x_m, '-', label = 'x data measured')
         self.ln_x_f, = plt.plot(self.time, self.x_f, '-', label = 'x data filtered')
         self.ln_x_r, = plt.plot(self.time, self.x_r, '-', label = 'x data real')
@@ -137,7 +137,7 @@ class Plotter():
 
         # Plotting y position
         self.y_m.append(measurements[2])
-        self.y_f.append(filtered_pose[3])
+        self.y_f.append(filtered_pose[2])
         self.y_r.append(real_position[1])
         self.ln_y_m.set_data(self.time, self.y_m)
         self.ln_y_r.set_data(self.time, self.y_r)
@@ -145,7 +145,7 @@ class Plotter():
         
         # Plotting z position
         self.z_m.append(measurements[4])
-        self.z_f.append(filtered_pose[6])
+        self.z_f.append(filtered_pose[4])
         self.z_r.append(real_position[2])
         self.ln_z_m.set_data(self.time, self.z_m)
         self.ln_z_r.set_data(self.time, self.z_r)
@@ -161,7 +161,7 @@ class Plotter():
 
         # Plotting y velocity
         self.vy_m.append(measurements[3])
-        self.vy_f.append(filtered_pose[4])
+        self.vy_f.append(filtered_pose[3])
         self.vy_r.append(real_velocity[1])
         self.ln_vy_m.set_data(self.time, self.vy_m)
         self.ln_vy_r.set_data(self.time, self.vy_r)
@@ -169,7 +169,7 @@ class Plotter():
 
         # Plotting z velocity
         self.vz_m.append(measurements[5])
-        self.vz_f.append(filtered_pose[7])
+        self.vz_f.append(filtered_pose[5])
         self.vz_r.append(real_velocity[2])
         self.ln_vz_m.set_data(self.time, self.vz_m)
         self.ln_vz_r.set_data(self.time, self.vz_r)

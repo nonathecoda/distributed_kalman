@@ -20,23 +20,20 @@ class KalmanFilter():
         self.std_dev_process_noise = std_dev_process_noise
         self.updated_state = np.array([[initial_pose[0]],
                                       [0],
-                                      [0],
                                       [initial_pose[1]],
                                       [0],
-                                      [0],
                                       [initial_pose[2]],
-                                      [0],
                                       [0]])
         print("Initial position: ", self.updated_state)
         self.updated_covariance = np.identity(self.updated_state.shape[0]) #dont put this to zero, otherwise the filter will diverge for some reason :(
         
         self.I = np.identity(self.updated_state.shape[0])
-        self.H = np.array([ [1, 0,  0,  0,  0,  0,  0,  0,  0],
-                            [0, 1,  0,  0,  0,  0,  0,  0,  0],
-                            [0, 0,  0,  1,  0,  0,  0,  0,  0],
-                            [0, 0,  0,  0,  1,  0,  0,  0,  0],
-                            [0, 0,  0,  0,  0,  0,  1,  0,  0],
-                            [0, 0,  0,  0,  0,  0,  0,  1,  0]])
+        self.H = np.array([ [1, 0,   0,  0,   0,  0],
+                            [0, 1,   0,  0,   0,  0],
+                            [0, 0,   1,  0,   0,  0],
+                            [0, 0,   0,  1,   0,  0],
+                            [0, 0,   0,  0,   1,  0],
+                            [0, 0,   0,  0,   0,  1]])
         #self.R = np.zeros(self.H.shape, int); np.fill_diagonal(self.R, 5) #this is for the case that our sensor measures everything that the state represents -> (15x15)
         self.R = np.zeros((6,6), int); np.fill_diagonal(self.R, 5000)
     
@@ -49,21 +46,17 @@ class KalmanFilter():
 
     def predict(self, dt):
         self.dt = dt
-        self.predicted_state = self.state_transition_matrix @ self.mixed_state
-        self.predicted_covariance = (self.state_transition_matrix @ self.mixed_covariance @ np.transpose(self.state_transition_matrix)) + self.process_noise_matrix
-        ic(self.state_transition_matrix)
-        ic(self.mixed_covariance)
-        ic(self.process_noise_matrix)
-        ic(self.predicted_covariance)
+        self.predicted_state = self.state_transition_matrix @ self.updated_state
+        self.predicted_covariance = (self.state_transition_matrix @ self.updated_covariance @ np.transpose(self.state_transition_matrix)) + self.process_noise_matrix
+        ic(self.predicted_state)
 
     def update(self, z, distributed, a = None, F = None):
         if distributed == True:
-            ic(F)
-            ic(np.linalg.det(self.predicted_covariance))
             self.updated_covariance = np.linalg.inv(self.predicted_covariance + F)
-            self.updated_state = self.updated_covariance @ (self.predicted_covariance @ self.predicted_state + a)
+            self.updated_state = self.predicted_state + self.updated_covariance @ (a - F @ self.predicted_state) # paper implementation
+            #self.updated_state = self.updated_covariance @ (self.predicted_covariance @ self.predicted_state + a) #Fontanelli's implementation
+            ic(self.updated_state)
         elif distributed == False:
             K = self.predicted_covariance @ np.transpose(self.H) @ np.linalg.inv(self.H @ self.predicted_covariance @ np.transpose(self.H) + self.R)
             self.updated_state = self.predicted_state + K @ (z - self.H @ self.predicted_state)
             self.updated_covariance = (self.I - K @ self.H) @ self.predicted_covariance
-

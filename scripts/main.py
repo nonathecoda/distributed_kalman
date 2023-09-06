@@ -80,6 +80,7 @@ class Main():
         line.set_3d_properties(path[2, :num])
         
         if num%5 == 0 and num != 0: # take measurement every 5 frames
+            print('NEW KALMAN ITERATION')
             timestep = num - self.last_timestamp
             self.last_timestamp = num
             for cam in self.cameras:
@@ -90,6 +91,7 @@ class Main():
             if self.distributed == True:
                 consensus_reached = False
                 while consensus_reached == False:
+                    print("Distributed consensus")
                     consensus_reached = True
                     for cam in self.cameras:
                         cam.send_messages(cam.avg_a, cam.avg_F)
@@ -97,16 +99,22 @@ class Main():
                         cam.calculate_average_consensus()
                     for cam in self.cameras:
                         for neighbor in cam.neighbors:
-                            if neighbor.avg_a != cam.avg_a:
+                            if not np.array_equal(neighbor.avg_a, cam.avg_a):
                                 consensus_reached = False
-                            if neighbor.avg_F != cam.avg_F:
+                            if not np.array_equal(neighbor.avg_F, cam.avg_F):
                                 consensus_reached = False
 
             for cam in self.cameras:
-                filtered_pose = cam.imm.update_pose(timestep = timestep, distributed = self.distributed, a = cam.avg_a, F = cam.avg_F)
+                measured_pose = cam.get_measurements()
+                ic(measured_pose)
+                cam.imm.const_vel_model.predict(timestep)
+                cam.imm.const_vel_model.update(z = measured_pose, distributed = self.distributed, a = cam.avg_a, F = cam.avg_F)
+                
+                cam.avg_a = None
+                cam.avg_F = None
                 
 
-            self.plotter.update_plot(cam.get_measurements().flatten(), filtered_pose.flatten(), self.target.get_position(), self.target.get_velocity(), self.last_timestamp)
+            self.plotter.update_plot(cam.get_measurements().flatten(), self.cameras[0].imm.const_vel_model.updated_state.flatten(), self.target.get_position(), self.target.get_velocity(), self.last_timestamp)
   
         plt.pause(0.01) # this updates both plots
             
