@@ -33,7 +33,6 @@ class Main():
         self.target = Target("target", 0, 0, 0)
         self.last_timestamp = 0
         
-
         self.plotter = Plotter()
         
         self.start_world()
@@ -71,7 +70,7 @@ class Main():
     def update_world(self, num, path, line):
         self.target.set_position(path[:, num])
         if num > 0:
-            self.target.set_velocity(path[:, num] - path[:, num-1]+ np.random.normal(0, 0.5, (3,)))
+            self.target.set_velocity(path[:, num] - path[:, num-1])#+ np.random.normal(0, 0.5, (3,)))
         if num > 1:
             self.target.set_acceleration(path[:, num] - 2*path[:, num-1] + path[:, num-2])
     
@@ -84,6 +83,7 @@ class Main():
             for cam in self.cameras:
                 cam.take_position_measurement(self.target.get_position())
                 cam.take_velocity_measurement(self.target.get_velocity())
+                cam.take_acceleration_measurement(self.target.get_acceleration())
 
             # calculate average consensus
             if self.distributed == True:
@@ -106,13 +106,15 @@ class Main():
                                 consensus_reached = False
                             if not np.allclose(neighbor.avg_F, cam.avg_F,  atol = 1e-08):
                                 consensus_reached = False
+                print("Consensus reached after " + str(round) + " rounds")
+
 
             for cam in self.cameras:
-                filtered_pose = cam.imm.update_pose(timestep = timestep, distributed = self.distributed, a = cam.avg_a, F = cam.avg_F)
+                filtered_pose, models = cam.imm.update_pose(timestep = timestep, distributed = self.distributed, a = cam.avg_a, F = cam.avg_F)
                 cam.avg_a = None
                 cam.avg_F = None
 
-            self.plotter.update_plot(cam.get_measurements().flatten(), filtered_pose.flatten(), self.target.get_position(), self.target.get_velocity(), self.last_timestamp)
+            self.plotter.update_plot(cam.get_measurements().flatten(), filtered_pose.flatten(), self.target.get_position(), self.target.get_velocity(), self.last_timestamp, models)
   
         plt.pause(0.01) # this updates both plots
             
@@ -138,15 +140,21 @@ class Main():
         if n_cameras == 2:
             cameras[0].neighbors.append(cameras[1])
             cameras[1].neighbors.append(cameras[0])
+
         return cameras
 
 if __name__ == '__main__':
-    n_cameras = 4
+    n_cameras = 5
     path = np.zeros((3, 3000), dtype = float)
     for i in range(0, path.shape[1]):
-        path[0, i] = i/6 #x
-        path[1, i] = i/4 #y
-        path[2, i] = i/8 #z
+        if i < 3000:
+            path[0, i] = (i/6)*i*10#x
+            path[1, i] = (i/4)*i*10 #y
+            path[2, i] = (i/8)*i*10 #z
+        else:
+            path[0, i] = (i/6)*5000 #x
+            path[1, i] = (i/4)*5000 #y
+            path[2, i] = (i/8)*5000 #z
     
     sensor_accuracy = 0.1
         

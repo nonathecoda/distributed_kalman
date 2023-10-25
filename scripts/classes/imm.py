@@ -16,17 +16,11 @@ class InteractingMultipleModel:
         self.initial_pose = initial_pose
         
         self.kalman = KalmanFilter(std_dev_process_noise=0.1, initial_pose=self.initial_pose)
-        #self.const_vel_model = CV_CYPR_Model(std_dev_process_noise=1, initial_pose=self.initial_pose, name = "constant velcoity")
+        self.const_vel_model = CV_CYPR_Model(std_dev_process_noise=0.1, initial_pose=self.initial_pose, name = "constant velcoity")
         self.const_accel_model = CA_CYPR_Model(std_dev_process_noise=0.1, initial_pose=self.initial_pose, name = "constant acceleration")
         #self.turn_model = CP_CYPR_RATE_Model(std_dev_process_noise=0.01, initial_pose=self.initial_pose, name = "turn")
         #self.models = [self.const_vel_model, self.const_accel_model, self.turn_model]
         self.models = [self.const_accel_model]
-        
-        #self.state_switching_matrix = np.array([[0.55, 0.15, 0.3],
-        #                                       [0.3, 0.60, 0.1],
-        #                                       [0.35, 0.05, 0.6]])
-        
-
 
         self.state_switching_matrix= np.array([[1.0]])
         for count, probs in enumerate(self.state_switching_matrix[0]):
@@ -39,6 +33,7 @@ class InteractingMultipleModel:
         print("IMM update - ", self.camera.name)
         measured_pose = self.camera.get_measurements()
         ic(measured_pose)
+
         # Calculate Psi for each model
         for j, model_j in enumerate(self.models):
             model_j.psi = 0
@@ -66,9 +61,13 @@ class InteractingMultipleModel:
 
         # Update likelihood for each model
         for j, model_j in enumerate(self.models):
-            Z_j = measured_pose - model_j.H @ model_j.predicted_state # TODO: check if H@x is correct or if it only needs x
+            Z_j = measured_pose - model_j.H @ model_j.predicted_state
             S_j = model_j.H @ model_j.predicted_covariance @ np.transpose(model_j.H) + model_j.R
-            model_j.likelihood = (1/np.sqrt(np.linalg.det(2*math.pi*S_j))) * np.exp(-0.5 * np.transpose(Z_j) @ np.linalg.inv(S_j) @ Z_j)
+            try:
+                model_j.likelihood = (1/np.sqrt(np.linalg.det(2*math.pi*S_j))) * np.exp(-0.5 * ((np.transpose(Z_j) @ np.linalg.inv(S_j) @ Z_j)[0][0]))
+            except FloatingPointError: # underflow error? It's because the predicted covariance is too big -> model apparently has a very low likelihood
+                model_j.likelihood = 1.0e-100
+            
 
         # Update probability for each model
         for j, model_j in enumerate(self.models):
@@ -85,13 +84,17 @@ class InteractingMultipleModel:
         # Combined covariance
         self.covariance = np.zeros((9,9))
         for j, model_j in enumerate(self.models):
-            self.covariance = self.covariance + (model_j.model_probability * (model_j.updated_covariance + (self.combined_state - model_j.updated_state) @ np.transpose(self.combined_state - model_j.updated_state)))
-    
+            ic(model_j.model_probability)
+            ic((self.combined_state - model_j.updated_state))
+            ic(model_j.updated_covariance)
+            self.covariance = self.covariance + (model_j.model_probability * (model_j.updated_covariance + ((model_j.updated_state - self.combined_state) @ np.transpose(model_j.updated_state - self.combined_state))))
+            ic(self.covariance)
+
         if has_negative_diagonal(self.covariance):
             print("combined covariance has negative diagonal")
             exit()
         
-        return self.combined_state.flatten()
+        return self.combined_state.flatten(), self.models
     
 def has_negative_diagonal(matrix):
 

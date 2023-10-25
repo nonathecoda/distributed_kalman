@@ -33,12 +33,15 @@ class KalmanFilter():
         self.I = np.identity(self.updated_state.shape[0])
         self.H = np.array([ [1, 0,  0,  0,  0,  0,  0,  0,  0],
                             [0, 1,  0,  0,  0,  0,  0,  0,  0],
+                            [0, 0,  1,  0,  0,  0,  0,  0,  0],
                             [0, 0,  0,  1,  0,  0,  0,  0,  0],
                             [0, 0,  0,  0,  1,  0,  0,  0,  0],
+                            [0, 0,  0,  0,  0,  1,  0,  0,  0],
                             [0, 0,  0,  0,  0,  0,  1,  0,  0],
-                            [0, 0,  0,  0,  0,  0,  0,  1,  0]])
+                            [0, 0,  0,  0,  0,  0,  0,  1,  0],
+                            [0, 0,  0,  0,  0,  0,  0,  0,  1]])
         #self.R = np.zeros(self.H.shape, int); np.fill_diagonal(self.R, 5) #this is for the case that our sensor measures everything that the state represents -> (15x15)
-        self.R = np.zeros((6,6), int); np.fill_diagonal(self.R, 5000)
+        self.R = np.zeros((9,9), int); np.fill_diagonal(self.R, 5000)
     
         # IMM variables
         self.model_probability = None
@@ -58,18 +61,19 @@ class KalmanFilter():
     def update(self, z, distributed, a = None, F = None):
         if distributed == True:
             self.updated_covariance = np.linalg.inv(np.linalg.inv(self.predicted_covariance) + F)
-            self.updated_state = self.updated_state + self.updated_covariance @ (a - F @ self.predicted_state)
-            #self.updated_state = self.updated_covariance @ (self.predicted_covariance @ self.predicted_state + a)
+            if has_negative_diagonal(self.updated_covariance):
+                print("updated_covariance has negative diagonal")
+                exit()
+            self.updated_state = self.predicted_state + self.updated_covariance @ (a - F @ self.predicted_state)
+
         elif distributed == False:
             K = self.predicted_covariance @ np.transpose(self.H) @ np.linalg.inv(self.H @ self.predicted_covariance @ np.transpose(self.H) + self.R)
             self.updated_state = self.predicted_state + K @ (z - self.H @ self.predicted_state)
-            self.updated_covariance = (self.I - K @ self.H) @ self.predicted_covariance
+            self.updated_covariance = (self.I - K @ self.H) @ self.predicted_covariance @ np.transpose(self.I - K @ self.H) + K @ self.R @ np.transpose(K) # Joseph form
 
 def has_negative_diagonal(matrix):
-
         # Iterate through the diagonal elements
         for i in range(len(matrix)):
             if matrix[i][i] < 0:
                 return True  # Found a negative value on the diagonal
-
         return False  # No negative values on the diagonal

@@ -11,6 +11,7 @@ class Camera():
         self.position = position
         self.position_measurement = None
         self.velocity_measurement = None
+        self.acceleration_measurement = None
         self.neighbors = []
         self.avg_a = None
         self.avg_F = None
@@ -28,14 +29,21 @@ class Camera():
         self.velocity_measurement = target_velocity + np.random.normal(0, self.accuracy, target_velocity.shape)
         return self.velocity_measurement
     
+    def take_acceleration_measurement(self, target_acceleration):
+        self.acceleration_measurement = target_acceleration + np.random.normal(0, self.accuracy, target_acceleration.shape)
+        return self.acceleration_measurement
+    
     def get_measurements(self):
         measurement = np.array([self.position_measurement[0],
                                 self.velocity_measurement[0],
+                                self.acceleration_measurement[0],
                                 self.position_measurement[1],
                                 self.velocity_measurement[1],
+                                self.acceleration_measurement[1],
                                 self.position_measurement[2],
-                                self.velocity_measurement[2]])
-        return measurement.reshape((6,1))
+                                self.velocity_measurement[2],
+                                self.acceleration_measurement[2]])
+        return measurement.reshape((9,1))
     
     def send_messages(self, a, F):
         # TODO: implement this

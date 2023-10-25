@@ -1,4 +1,4 @@
-import icecream as ic
+from icecream import ic
 import numpy as np
 
 class Target():

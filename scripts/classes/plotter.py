@@ -46,6 +46,10 @@ class Plotter():
         self.error_vy = [0]
         self.error_vz = [0]
 
+        #data points model probabilities
+        self.model1 = [0]
+        self.model2 = [0]
+
         # subplot x position
         fig.add_subplot(3, 3, 1)
         plt.axis([0, 3000, 0, 750])
@@ -87,12 +91,20 @@ class Plotter():
         plt.legend(handles=[self.ln_vy_r, self.ln_vy_m, self.ln_vy_f])
 
         # subplot z velocity
-        fig.add_subplot(3, 3, 6)
+        """fig.add_subplot(3, 3, 6)
         plt.axis([0, 3000, -20, 20])
         self.ln_vz_r, = plt.plot(self.time, self.vz_r, '-', label = 'z velocity real')
         self.ln_vz_m, = plt.plot(self.time, self.vz_m, '-', label = 'z velocity measured')
         self.ln_vz_f, = plt.plot(self.time, self.vz_f, '-', label = 'z velocity filtered')
         plt.legend(handles=[self.ln_vz_r, self.ln_vz_m, self.ln_vz_f])
+        """
+
+        #subplot model probabilities
+        fig.add_subplot(3, 3, 6)
+        plt.axis([0, 3000, 0, 1])
+        self.ln_model_1, = plt.plot(self.time, self.model1, '-', label = 'model 1')
+        self.ln_model_2, = plt.plot(self.time, self.model2, '-', label = 'model 2')
+        plt.legend(handles=[self.ln_model_1, self.ln_model_2])
 
         # subplot error in x
         fig.add_subplot(3, 3, 7)
@@ -122,7 +134,7 @@ class Plotter():
         print('Initialised Plotter')
         
 
-    def update_plot(self, measurements, filtered_pose, real_position, real_velocity, timestamp):
+    def update_plot(self, measurements, filtered_pose, real_position, real_velocity, timestamp, models):
         
         self.time.append(timestamp)
 
@@ -136,7 +148,7 @@ class Plotter():
         
 
         # Plotting y position
-        self.y_m.append(measurements[2])
+        self.y_m.append(measurements[3])
         self.y_f.append(filtered_pose[3])
         self.y_r.append(real_position[1])
         self.ln_y_m.set_data(self.time, self.y_m)
@@ -144,7 +156,7 @@ class Plotter():
         self.ln_y_f.set_data(self.time, self.y_f)
         
         # Plotting z position
-        self.z_m.append(measurements[4])
+        self.z_m.append(measurements[6])
         self.z_f.append(filtered_pose[6])
         self.z_r.append(real_position[2])
         self.ln_z_m.set_data(self.time, self.z_m)
@@ -160,7 +172,7 @@ class Plotter():
         self.ln_vx_f.set_data(self.time, self.vx_f)
 
         # Plotting y velocity
-        self.vy_m.append(measurements[3])
+        self.vy_m.append(measurements[4])
         self.vy_f.append(filtered_pose[4])
         self.vy_r.append(real_velocity[1])
         self.ln_vy_m.set_data(self.time, self.vy_m)
@@ -168,12 +180,14 @@ class Plotter():
         self.ln_vy_f.set_data(self.time, self.vy_f)
 
         # Plotting z velocity
-        self.vz_m.append(measurements[5])
+        '''
+        self.vz_m.append(measurements[7])
         self.vz_f.append(filtered_pose[7])
         self.vz_r.append(real_velocity[2])
         self.ln_vz_m.set_data(self.time, self.vz_m)
         self.ln_vz_r.set_data(self.time, self.vz_r)
         self.ln_vz_f.set_data(self.time, self.vz_f)
+        '''
 
         # Plotting error in x position and velocity
         avg_error_x = np.average(abs(np.subtract(self.x_f, self.x_r)))
@@ -198,3 +212,9 @@ class Plotter():
         avg_error_vz = np.average(abs(np.subtract(self.vz_f, self.vz_r)))
         self.error_vz.append(avg_error_vz)
         self.ln_error_vz.set_data(self.time, self.error_vz)
+
+        # Plotting model probabilities
+        self.model1.append(models[0].model_probability)
+    #    self.model2.append(models[1].model_probability)
+        self.ln_model_1.set_data(self.time, self.model1)
+    #    self.ln_model_2.set_data(self.time, self.model2)
