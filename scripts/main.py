@@ -144,10 +144,10 @@ class Main():
         return cameras
 
 if __name__ == '__main__':
-    n_cameras = 5
+    n_cameras = 2
     path = np.zeros((3, 3000), dtype = float)
     for i in range(0, path.shape[1]):
-        if i < 3000:
+        if i < 500:
             path[0, i] = (i/6)*i*10#x
             path[1, i] = (i/4)*i*10 #y
             path[2, i] = (i/8)*i*10 #z

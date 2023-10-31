@@ -16,13 +16,14 @@ class InteractingMultipleModel:
         self.initial_pose = initial_pose
         
         self.kalman = KalmanFilter(std_dev_process_noise=0.1, initial_pose=self.initial_pose)
-        self.const_vel_model = CV_CYPR_Model(std_dev_process_noise=0.1, initial_pose=self.initial_pose, name = "constant velcoity")
-        self.const_accel_model = CA_CYPR_Model(std_dev_process_noise=0.1, initial_pose=self.initial_pose, name = "constant acceleration")
+        self.const_vel_model = CV_CYPR_Model(std_dev_process_noise=1000, initial_pose=self.initial_pose, name = "constant velcoity")
+        self.const_accel_model = CA_CYPR_Model(std_dev_process_noise=1000, initial_pose=self.initial_pose, name = "constant acceleration")
         #self.turn_model = CP_CYPR_RATE_Model(std_dev_process_noise=0.01, initial_pose=self.initial_pose, name = "turn")
         #self.models = [self.const_vel_model, self.const_accel_model, self.turn_model]
-        self.models = [self.const_accel_model]
+        self.models = [self.const_vel_model,self.const_accel_model]
 
-        self.state_switching_matrix= np.array([[1.0]])
+        self.state_switching_matrix= np.array([[0.9, 0.1],
+                                               [0.1, 0.9]])
         for count, probs in enumerate(self.state_switching_matrix[0]):
             self.models[count].model_probability = probs # TODO: came up with this myself, how do you actually initialise the model probabilities?
 

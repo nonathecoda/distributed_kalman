@@ -41,7 +41,7 @@ class KalmanFilter():
                             [0, 0,  0,  0,  0,  0,  0,  1,  0],
                             [0, 0,  0,  0,  0,  0,  0,  0,  1]])
         #self.R = np.zeros(self.H.shape, int); np.fill_diagonal(self.R, 5) #this is for the case that our sensor measures everything that the state represents -> (15x15)
-        self.R = np.zeros((9,9), int); np.fill_diagonal(self.R, 5000)
+        self.R = np.zeros((9,9), int); np.fill_diagonal(self.R, 10)
     
         # IMM variables
         self.model_probability = None
@@ -54,13 +54,17 @@ class KalmanFilter():
         self.dt = dt
         self.predicted_state = self.state_transition_matrix @ self.mixed_state
         self.predicted_covariance = (self.state_transition_matrix @ self.mixed_covariance @ np.transpose(self.state_transition_matrix)) + self.process_noise_matrix
+        
+        print(self.predicted_covariance)
+        
         if has_negative_diagonal(self.predicted_covariance):
             print("predicted covariance has negative diagonal")
             exit()
 
     def update(self, z, distributed, a = None, F = None):
+        
         if distributed == True:
-            self.updated_covariance = np.linalg.inv(np.linalg.inv(self.predicted_covariance) + F)
+            self.updated_covariance = np.linalg.inv(np.linalg.pinv(self.predicted_covariance) + F)
             if has_negative_diagonal(self.updated_covariance):
                 print("updated_covariance has negative diagonal")
                 exit()

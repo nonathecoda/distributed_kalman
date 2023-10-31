@@ -215,6 +215,6 @@ class Plotter():
 
         # Plotting model probabilities
         self.model1.append(models[0].model_probability)
-    #    self.model2.append(models[1].model_probability)
+        self.model2.append(models[1].model_probability)
         self.ln_model_1.set_data(self.time, self.model1)
-    #    self.ln_model_2.set_data(self.time, self.model2)
+        self.ln_model_2.set_data(self.time, self.model2)
