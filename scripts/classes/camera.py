@@ -5,10 +5,10 @@ from classes.imm import InteractingMultipleModel
 
 class Camera():
     
-    def __init__(self, name, accuracy, position, initial_target_pose) -> None:
+    def __init__(self, name, noise, camera_position, initial_target_state) -> None:
         self.name = name
-        self.accuracy = accuracy
-        self.position = position
+        self.noise = noise
+        self.position = camera_position
         self.position_measurement = None
         self.velocity_measurement = None
         self.acceleration_measurement = None
@@ -19,46 +19,46 @@ class Camera():
         self.received_a = []
         self.received_F = []
 
-        self.imm = InteractingMultipleModel(camera = self, initial_pose=initial_target_pose)
+        self.imm = InteractingMultipleModel(camera = self, initial_target_state = initial_target_state)
 
     def take_position_measurement(self, target_position):
-        self.position_measurement = target_position + np.random.normal(0, self.accuracy, target_position.shape)
+        self.position_measurement = target_position + np.random.normal(0, self.noise, target_position.shape)
+        ic(self.position_measurement)
         return self.position_measurement
     
     def take_velocity_measurement(self, target_velocity):
-        self.velocity_measurement = target_velocity + np.random.normal(0, self.accuracy, target_velocity.shape)
+        self.velocity_measurement = target_velocity + np.random.normal(0, self.noise, target_velocity.shape)
+        ic(self.velocity_measurement)
         return self.velocity_measurement
     
     def take_acceleration_measurement(self, target_acceleration):
-        self.acceleration_measurement = target_acceleration + np.random.normal(0, self.accuracy, target_acceleration.shape)
+        self.acceleration_measurement = target_acceleration + np.random.normal(0, self.noise, target_acceleration.shape)
+        ic(self.acceleration_measurement)
         return self.acceleration_measurement
     
     def get_measurements(self):
-        measurement = np.array([self.position_measurement[0],
-                                self.velocity_measurement[0],
-                                self.acceleration_measurement[0],
-                                self.position_measurement[1],
+        measurement = np.array([self.velocity_measurement[0],
                                 self.velocity_measurement[1],
-                                self.acceleration_measurement[1],
-                                self.position_measurement[2],
-                                self.velocity_measurement[2],
-                                self.acceleration_measurement[2]])
-        return measurement.reshape((9,1))
+                                self.velocity_measurement[2]])
+        return measurement.reshape((3,1))
     
     def send_messages(self, a, F):
         # TODO: implement this
         if a is None and F is None:
-            a = np.transpose(self.imm.kalman.H) @ np.linalg.inv(self.imm.kalman.R) @ self.get_measurements()
-            F = np.transpose(self.imm.kalman.H) @ np.linalg.inv(self.imm.kalman.R) @ self.imm.kalman.H
+
+            a = np.transpose(self.imm.const_accel_model.H) @ np.linalg.inv(self.imm.const_accel_model.R) @ self.get_measurements()
+            F = np.transpose(self.imm.const_accel_model.H) @ np.linalg.inv(self.imm.const_accel_model.R) @ self.imm.const_accel_model.H
+
+            a_6d = np.transpose(self.imm.const_vel_model.H) @ np.linalg.inv(self.imm.const_vel_model.R) @ self.get_measurements()
+            F_6d = np.transpose(self.imm.const_vel_model.H) @ np.linalg.inv(self.imm.const_vel_model.R) @ self.imm.const_vel_model.H
+
+
         self.received_a.append(a)
         self.received_F.append(F)
         
         for n in self.neighbors:
-            n.receive_message(a, F)
-    
-    def receive_message(self, a, F):
-        self.received_a.append(a)
-        self.received_F.append(F)
+            n.received_a.append(a)
+            n.received_F.append(F)
 
     def calculate_average_consensus(self):
         self.avg_a = np.sum(self.received_a, axis=0) / len(self.received_a) #np.mean(self.received_a)

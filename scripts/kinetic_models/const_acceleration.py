@@ -7,9 +7,16 @@ class CA_CYPR_Model(KalmanFilter):
     constant acceleration,
     constant yaw pitch roll angles.
     '''
-    def __init__(self, std_dev_process_noise, initial_pose, name):
-        super().__init__(initial_pose, std_dev_process_noise)
+    def __init__(self, std_dev_process_noise_q, measurement_noise_r, initial_pose, name = "ca"):
         self.name = name
+        #initial_pose, H, measurement_noise_r, std_dev_process_noise_q
+        H = np.array([  [0, 1,  0,  0,  0,  0,  0,  0,  0],
+                        [0, 0,  0,  0,  1,  0,  0,  0,  0],
+                        [0, 0,  0,  0,  0,  0,  0,  1,  0]])
+        super().__init__(initial_pose, H, measurement_noise_r, std_dev_process_noise_q)
+        self.dims = H.shape[1]
+        print(self.name)
+        
         
     @property
     def dt(self):
@@ -17,16 +24,16 @@ class CA_CYPR_Model(KalmanFilter):
 
     @dt.setter
     def dt(self, timestep):
-                
-        self.state_transition_matrix =  np.array([[1,    timestep,       (timestep**2)/2,    0,      0,          0,              0,      0,          0             ],
-                                                  [0,    1,              timestep,           0,      0,          0,              0,      0,          0             ],
-                                                  [0,    0,              1,                  0,      0,          0,              0,      0,          0             ],
-                                                  [0,    0,              0,                  1,      timestep,   (timestep**2)/2,0,      0,          0             ],
-                                                  [0,    0,              0,                  0,      1,          timestep,       0,      0,          0             ],                                                 
-                                                  [0,    0,              0,                  0,      0,          1,              0,      0,          0             ],
-                                                  [0,    0,              0,                  0,      0,          0,              1,      timestep,   (timestep**2)/2],
-                                                  [0,    0,              0,                  0,      0,          0,              0,      1,          timestep      ],
-                                                  [0,    0,              0,                  0,      0,          0,              0,      0,          1             ]])
+        ic(timestep)
+        self.state_transition_matrix =  np.array([[1,    timestep,       0.5*timestep*timestep,     0,      0,          0,                      0,      0,          0                   ],
+                                                  [0,    1,              timestep,                  0,      0,          0,                      0,      0,          0                   ],
+                                                  [0,    0,              1,                         0,      0,          0,                      0,      0,          0                   ],
+                                                  [0,    0,              0,                         1,      timestep,   0.5*timestep*timestep,  0,      0,          0                   ],
+                                                  [0,    0,              0,                         0,      1,          timestep,               0,      0,          0                   ],                                                 
+                                                  [0,    0,              0,                         0,      0,          1,                      0,      0,          0                   ],
+                                                  [0,    0,              0,                         0,      0,          0,                      1,      timestep,   0.5*timestep*timestep],
+                                                  [0,    0,              0,                         0,      0,          0,                      0,      1,          timestep            ],
+                                                  [0,    0,              0,                         0,      0,          0,                      0,      0,          1                   ]])
 
         G = np.array([  [(1/6)*np.power(timestep, 3)],
                         [0.5*np.square(timestep)    ],
@@ -37,6 +44,7 @@ class CA_CYPR_Model(KalmanFilter):
                         [(1/6)*np.power(timestep, 3)],
                         [0.5*np.square(timestep)    ],
                         [timestep                   ]])
+        
         self.process_noise_matrix = np.matmul(G, np.transpose(G)) * np.square(self.std_dev_process_noise)
     
-   
+        

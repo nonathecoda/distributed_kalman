@@ -3,10 +3,10 @@ import numpy as np
 
 class Target():
 
-    def __init__(self, name, x, y, z) -> None:
+    def __init__(self, name, initial_pos) -> None:
         self.name = name
 
-        self.position = np.array([x, y, z])
+        self.position = initial_pos
         self.velocity = np.array([0, 0, 0])
         self.acceleration = np.array([0, 0, 0])
     
