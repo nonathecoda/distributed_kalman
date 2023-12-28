@@ -37,9 +37,9 @@ class Camera():
         return self.acceleration_measurement
     
     def get_measurements(self):
-        measurement = np.array([self.velocity_measurement[0],
-                                self.velocity_measurement[1],
-                                self.velocity_measurement[2]])
+        measurement = np.array([self.position_measurement[0],
+                                self.position_measurement[1],
+                                self.position_measurement[2]])
         return measurement.reshape((3,1))
     
     def send_messages(self, a, F):

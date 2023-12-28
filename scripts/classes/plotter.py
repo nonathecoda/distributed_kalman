@@ -40,10 +40,10 @@ class Plotter():
         # subplot x position
         fig.add_subplot(3, 2, 1)
         plt.axis([0, 30, -100, 1000])
-        #self.ln_x_m, = plt.plot(self.time, self.x_m, '-', label = 'measured')
+        self.ln_x_m, = plt.plot(self.time, self.x_m, '-', label = 'measured')
         self.ln_x_f, = plt.plot(self.time, self.x_f, '-', label = 'filtered')
         self.ln_x_r, = plt.plot(self.time, self.x_r, '-', label = 'real')
-        plt.legend(handles=[self.ln_x_f, self.ln_x_r])
+        plt.legend(handles=[self.ln_x_f, self.ln_x_r, self.ln_x_m])
         plt.title('x position')
 
         # subplot x velocity
@@ -92,18 +92,18 @@ class Plotter():
         
         self.time.append(timestamp)
         # Plotting x position
-        #self.x_m.append(measurements[0])
+        self.x_m.append(measurements[0])
         self.x_f.append(filtered_pose[0])
         self.x_r.append(real_position[0])
-        #self.ln_x_m.set_data(self.time, self.x_m)
+        self.ln_x_m.set_data(self.time, self.x_m)
         self.ln_x_r.set_data(self.time, self.x_r)
         self.ln_x_f.set_data(self.time, self.x_f)
         
         # Plotting x velocity
-        self.vx_m.append(measurements[0])
+        #self.vx_m.append(measurements[0])
         self.vx_f.append(filtered_pose[1])
         self.vx_r.append(real_velocity[0])
-        self.ln_vx_m.set_data(self.time, self.vx_m)
+        #self.ln_vx_m.set_data(self.time, self.vx_m)
         self.ln_vx_f.set_data(self.time, self.vx_f)
         self.ln_vx_r.set_data(self.time, self.vx_r)
 

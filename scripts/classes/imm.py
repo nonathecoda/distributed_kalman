@@ -50,8 +50,8 @@ class InteractingMultipleModel:
         for count, probs in enumerate(self.state_switching_matrix[0]):
             self.models[count].model_probability = probs
 
-        self.models[0].model_probability = 0.9
-        self.models[1].model_probability = 0.1
+        self.models[0].model_probability = 0.1
+        self.models[1].model_probability = 0.9
 
         self.covariance = None
         self.combined_state = None

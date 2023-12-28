@@ -11,9 +11,9 @@ class CV_CYPR_Model(KalmanFilter):
     def __init__(self, std_dev_process_noise_q, measurement_noise_r, initial_pose, name = "cv"):
         self.name = name
         #initial_pose, H, measurement_noise_r, std_dev_process_noise_q
-        H = np.array([ [0,  1,  0,  0,  0,  0],
-                        [0, 0,  0,  1,  0,  0],
-                        [0, 0,  0,  0,  0,  1]])
+        H = np.array([  [1,     0,  0,  0,  0,  0],
+                        [0,     0,  1,  0,  0,  0],
+                        [0,     0,  0,  0,  1,  0]])
 
         super().__init__(initial_pose, H, measurement_noise_r, std_dev_process_noise_q)
         self.dims = H.shape[1]
