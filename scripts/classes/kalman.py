@@ -40,7 +40,7 @@ class KalmanFilter():
         self.predicted_covariance = (self.state_transition_matrix @ self.mixed_covariance @ np.transpose(self.state_transition_matrix)) + self.process_noise_matrix
         
         print(self.name, ":")
-        ic(self.predicted_covariance)
+        #ic(self.predicted_covariance)
         ic(self.predicted_state)
 
         if has_negative_diagonal(self.predicted_covariance):
@@ -51,14 +51,15 @@ class KalmanFilter():
         
         print("Kalman update " + self.name)
         if distributed == True:
-            self.updated_covariance = np.linalg.inv(np.linalg.pinv(self.predicted_covariance) + F)
+            self.updated_covariance = np.linalg.inv(np.linalg.inv(self.predicted_covariance) + F)
+            ic(F)
             if has_negative_diagonal(self.updated_covariance):
                 print(self.name + ": updated_covariance has negative diagonal.")
-                ic(self.updated_covariance)
                 exit()
             self.updated_state = self.predicted_state + np.linalg.inv(self.updated_covariance) @ (a - F @ self.predicted_state)
             ic(self.updated_state)
-            #exit()
+            ic(self.updated_covariance)
+            ic(np.linalg.inv(self.updated_covariance) @ (a - F @ self.predicted_state))
         else:
             
             K = (self.predicted_covariance @ np.transpose(self.H)) @ np.linalg.inv((self.H @ self.predicted_covariance @ np.transpose(self.H)) + self.R)

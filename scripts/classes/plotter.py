@@ -116,11 +116,13 @@ class Plotter():
         #self.ln_ax_f.set_data(self.time, self.ax_f)
 
         # Plotting error in x position and velocity
-        avg_error_x = np.average(abs(np.subtract(self.x_f, self.x_r)))
-        self.error_x.append(avg_error_x)
+        #avg_error_x = np.average(abs(np.subtract(self.x_f, self.x_r)))
+        rmsd_x = np.sqrt(np.mean((np.subtract(self.x_f,self.x_r))**2))
+        self.error_x.append(rmsd_x)
         self.ln_error_x.set_data(self.time, self.error_x)
-        avg_error_vx = np.average(abs(np.subtract(self.vx_f, self.vx_r)))
-        self.error_vx.append(avg_error_vx)
+        #avg_error_vx = np.average(abs(np.subtract(self.vx_f, self.vx_r)))
+        rmsd_vx = np.sqrt(np.mean((np.subtract(self.vx_f,self.vx_r))**2))
+        self.error_vx.append(rmsd_vx)
         self.ln_error_vx.set_data(self.time, self.error_vx)
         #avg_error_ax = np.average(abs(np.subtract(self.ax_f, self.ax_r)))
         #self.error_ax.append(avg_error_ax)
@@ -128,9 +130,9 @@ class Plotter():
 
         # Plotting model probabilities
         self.model1.append(models[0].model_probability)
-        self.model2.append(models[1].model_probability)
+        #self.model2.append(models[1].model_probability)
         self.ln_model_1.set_data(self.time, self.model1)
-        self.ln_model_2.set_data(self.time, self.model2)
+        #self.ln_model_2.set_data(self.time, self.model2)
 
         # Plotting covariance
         self.covariance.set_data(models[0].updated_covariance/100)

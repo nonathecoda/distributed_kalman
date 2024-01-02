@@ -23,17 +23,14 @@ class Camera():
 
     def take_position_measurement(self, target_position):
         self.position_measurement = target_position + np.random.normal(0, self.noise, target_position.shape)
-        ic(self.position_measurement)
         return self.position_measurement
     
     def take_velocity_measurement(self, target_velocity):
         self.velocity_measurement = target_velocity + np.random.normal(0, self.noise, target_velocity.shape)
-        ic(self.velocity_measurement)
         return self.velocity_measurement
     
     def take_acceleration_measurement(self, target_acceleration):
         self.acceleration_measurement = target_acceleration + np.random.normal(0, self.noise, target_acceleration.shape)
-        ic(self.acceleration_measurement)
         return self.acceleration_measurement
     
     def get_measurements(self):
@@ -48,10 +45,6 @@ class Camera():
 
             a = np.transpose(self.imm.const_accel_model.H) @ np.linalg.inv(self.imm.const_accel_model.R) @ self.get_measurements()
             F = np.transpose(self.imm.const_accel_model.H) @ np.linalg.inv(self.imm.const_accel_model.R) @ self.imm.const_accel_model.H
-
-            a_6d = np.transpose(self.imm.const_vel_model.H) @ np.linalg.inv(self.imm.const_vel_model.R) @ self.get_measurements()
-            F_6d = np.transpose(self.imm.const_vel_model.H) @ np.linalg.inv(self.imm.const_vel_model.R) @ self.imm.const_vel_model.H
-
 
         self.received_a.append(a)
         self.received_F.append(F)

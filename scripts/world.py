@@ -10,6 +10,8 @@ from classes.camera import Camera
 from classes.imm import InteractingMultipleModel
 from classes.plotter import Plotter
 from kinetic_models.const_velocity import CV_CYPR_Model
+from classes.path import get_figure_eight, get_constant_acceleration
+from plotters.plotter_ca import Plotter_CA
 
 class World():
     def __init__(self):
@@ -18,16 +20,17 @@ class World():
         # create path
         self.ACCELERATION = np.array([50, 50, 50])
 
-        initial_pos = np.array([0, 0, 0])
-        initial_vel = np.array([30, 30, 30])
-        #initial_accel = np.array([0, 0, 0])
-        initial_accel = self.ACCELERATION
+        initial_pos = np.array([20, 20, 20])
+        initial_vel = np.array([3, 3, 3])
+        initial_accel = np.array([5, 5, 5])
+        #initial_accel = self.ACCELERATION
         self.dt = 0.01
-        self.coordinates, self.velocities, self.accelerations, self.timestamps = self.create_path(initial_pos, initial_vel, initial_accel, self.dt)
+        self.coordinates, self.velocities, self.accelerations, self.timestamps = get_constant_acceleration(initial_pos, initial_vel, initial_accel, self.dt)
+        #self.coordinates, self.velocities, self.accelerations, self.timestamps = get_figure_eight(dt = self.dt)
 
         # create cameras
-        N_CAMERAS = 3
-        SENSOR_NOISE = 0.1
+        N_CAMERAS = 2
+        SENSOR_NOISE = 5
         if N_CAMERAS > 1:
             self.distributed = True
         else:
@@ -38,10 +41,11 @@ class World():
         self.target = Target("target", initial_pos = initial_pos)
 
         # create plotter for graphs
-        self.plotter = Plotter(initial_pos, initial_vel, initial_accel)
+        #self.plotter = Plotter(initial_pos, initial_vel, initial_accel)
+        self.plotter = Plotter_CA(initial_pos, initial_vel, initial_accel)
 
         # create animation
-        fig = plt.figure(figsize=(1, 1))
+        fig = plt.figure(figsize=(2, 2))
         ax = fig.add_subplot(projection='3d')
         self.line, = ax.plot(self.coordinates[0, 0:1], self.coordinates[1, 0:1], self.coordinates[2, 0:1])
         
@@ -72,16 +76,16 @@ class World():
         self.line.set_3d_properties(self.coordinates[2, :k])
         
         # filter step
+        
         if k%self.MEASUREMENT_FREQUENCY == 0 and k > 0: # take measurement every x timesteps
             print("--------------------")
             print("MEASUREMENT " + str(int(k/self.MEASUREMENT_FREQUENCY)))
            
-            '''
+            
             ic(self.target.get_position())
             ic(self.target.get_velocity())
             ic(self.target.get_acceleration())
-            exit()
-            '''
+            #exit()
             
             for cam in self.cameras:
                 cam.take_position_measurement(self.target.get_position())
@@ -115,16 +119,19 @@ class World():
                 filtered_pose, models = cam.imm.update_pose(timestep = self.dt, distributed = self.distributed, a = cam.avg_a, F = cam.avg_F)
                 cam.avg_a = None
                 cam.avg_F = None
-
+            
             self.plotter.update_plot(cam.get_measurements().flatten(), filtered_pose.flatten(), self.target.get_position(), self.target.get_velocity(), self.target.get_acceleration(), self.timestamps[k], models)
-            
-
+            ic(cam.get_measurements().flatten())
+            ic(filtered_pose)
+        
         plt.pause(0.01) # this updates both plots
-            
+        
         if k == 3000-1:
+        #if k == 2:
             plt.close()
             exit()
 
+    '''
     def create_path(self, initial_pos, initial_vel, initial_accel, dt):
         # initial_pos: initial position of the object (3d vector)
         # initial_vel: initial velocity of the object (3d vector)
@@ -143,7 +150,7 @@ class World():
                 velocities[:, i] = initial_vel
                 accelerations[:, i] = initial_accel
                 timestamps[i] = 0
-            if i > 300:
+            if i < 150:
                 coordinates[:, i] = coordinates[:, i-1] + velocities[:, i-1] * dt
                 velocities[:, i] = velocities[:, i-1]
                 accelerations[:, i] = np.array([0, 0, 0])
@@ -155,7 +162,8 @@ class World():
                 timestamps[i] = timestamps[i-1] + dt
 
         return coordinates, velocities, accelerations, timestamps
-
+    '''
+        
     def create_cameras(self, n_cameras, sensor_noise):
         initial_target_state = [self.coordinates[0, self.MEASUREMENT_FREQUENCY-1], self.velocities[0, self.MEASUREMENT_FREQUENCY-1],self.accelerations[0, self.MEASUREMENT_FREQUENCY-1], self.coordinates[1, self.MEASUREMENT_FREQUENCY-1], self.velocities[1, self.MEASUREMENT_FREQUENCY-1],self.accelerations[1, self.MEASUREMENT_FREQUENCY-1], self.coordinates[2, self.MEASUREMENT_FREQUENCY-1], self.velocities[2, self.MEASUREMENT_FREQUENCY-1],self.accelerations[2, self.MEASUREMENT_FREQUENCY-1]]
         ic(initial_target_state)

@@ -20,11 +20,11 @@ class InteractingMultipleModel:
         initial_pose_6d = np.delete(initial_pose_9d, [2,5,8], 0)
         
         #self.kalman = KalmanFilter(std_dev_process_noise=0.1, measurement_noise_r =  5, initial_pose=initial_pose)
-        self.const_vel_model = CV_CYPR_Model(std_dev_process_noise_q=1, measurement_noise_r = 50, initial_pose=initial_pose_6d, name = "constant velocity")
-        self.const_accel_model = CA_CYPR_Model(std_dev_process_noise_q=1, measurement_noise_r = 1000, initial_pose=initial_pose_9d, name = "constant acceleration")
-        #self.turn_model = CP_CYPR_RATE_Model(std_dev_process_noise=0.01, initial_pose=self.initial_pose, name = "turn")
+        self.const_vel_model = CV_CYPR_Model(std_dev_process_noise_q=1, measurement_noise_r = 10, initial_pose=initial_pose_6d, name = "constant velocity")
+        self.const_accel_model = CA_CYPR_Model(std_dev_process_noise_q=1, measurement_noise_r = 2000, initial_pose=initial_pose_9d, name = "constant acceleration")
+        self.turn_model = CP_CYPR_RATE_Model(std_dev_process_noise_q=10000, measurement_noise_r = 1, initial_pose=initial_pose_9d, name = "turn")
         self.models = [self.const_vel_model, self.const_accel_model]
-        #self.models = [self.const_vel_model]
+        self.models = [self.const_accel_model]
 
         cv2ca = np.array([
         [1, 0, 0, 0, 0, 0],
@@ -44,14 +44,14 @@ class InteractingMultipleModel:
         self.state_switching_matrix= np.array([[0.8, 0.2],
                                                [0.25, 0.75]])
         
-        #self.state_switching_matrix= np.array([[1]])
-        #self.model_transition_matrix = [[np.eye(9)]]
+        self.state_switching_matrix= np.array([[1]])
+        self.model_transition_matrix = [[np.eye(9)]]
 
         for count, probs in enumerate(self.state_switching_matrix[0]):
             self.models[count].model_probability = probs
 
-        self.models[0].model_probability = 0.1
-        self.models[1].model_probability = 0.9
+        #self.models[0].model_probability = 0.1
+        #self.models[1].model_probability = 0.9
 
         self.covariance = None
         self.combined_state = None
@@ -108,7 +108,6 @@ class InteractingMultipleModel:
             for i, model_i in enumerate(self.models):
                 c = c + (model_i.likelihood*model_i.psi)
             model_j.model_probability = (1/c)*model_j.likelihood*model_j.psi
-
         
         # for using only constant acceleration, replace combined state formula
         cv2ca = np.array([
@@ -127,8 +126,8 @@ class InteractingMultipleModel:
         # Combine state estimates to combined state
         self.combined_state = np.zeros((6,1))
         for j, model_j in enumerate(self.models):
-            self.combined_state = self.combined_state + (self.model_transition_matrix[0][j]@(model_j.updated_state * model_j.model_probability))
-            #self.combined_state = self.combined_state + (cv2ca.T@(model_j.updated_state * model_j.model_probability))
+            #self.combined_state = self.combined_state + (self.model_transition_matrix[0][j]@(model_j.updated_state * model_j.model_probability))
+            self.combined_state = self.combined_state + (cv2ca.T@(model_j.updated_state * model_j.model_probability))
         # Combined covariance TODO: needed?
         #self.covariance = np.zeros((9,9))
         #for j, model_j in enumerate(self.models):
