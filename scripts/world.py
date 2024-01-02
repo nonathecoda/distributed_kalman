@@ -8,24 +8,26 @@ import time
 from classes.target import Target
 from classes.camera import Camera
 from classes.imm import InteractingMultipleModel
-from classes.plotter import Plotter
 from kinetic_models.const_velocity import CV_CYPR_Model
-from classes.path import get_figure_eight, get_constant_acceleration
+from classes.path import get_figure_eight, get_constant_acceleration, get_constant_turn, get_cv_ct_ca
 from plotters.plotter_ca import Plotter_CA
+from plotters.plotter import Plotter
+from plotters.plotter_cv import Plotter_CV
+from plotters.plotter_ct import Plotter_CT
 
 class World():
     def __init__(self):
         self.MEASUREMENT_FREQUENCY = 1
+        TURN_RATE = 2
+        self.DELAY = 2
 
         # create path
-        self.ACCELERATION = np.array([50, 50, 50])
-
         initial_pos = np.array([20, 20, 20])
-        initial_vel = np.array([3, 3, 3])
-        initial_accel = np.array([5, 5, 5])
-        #initial_accel = self.ACCELERATION
-        self.dt = 0.01
-        self.coordinates, self.velocities, self.accelerations, self.timestamps = get_constant_acceleration(initial_pos, initial_vel, initial_accel, self.dt)
+        initial_vel = np.array([30, 30, 30])
+        initial_accel = np.array([10, 10, 10])
+
+        self.dt = 0.01 #seconds
+        self.coordinates, self.velocities, self.accelerations, self.timestamps = get_cv_ct_ca(TURN_RATE, initial_pos, initial_vel, initial_accel, self.dt)
         #self.coordinates, self.velocities, self.accelerations, self.timestamps = get_figure_eight(dt = self.dt)
 
         # create cameras
@@ -42,7 +44,7 @@ class World():
 
         # create plotter for graphs
         #self.plotter = Plotter(initial_pos, initial_vel, initial_accel)
-        self.plotter = Plotter_CA(initial_pos, initial_vel, initial_accel)
+        self.plotter = Plotter(initial_pos, initial_vel, initial_accel)
 
         # create animation
         fig = plt.figure(figsize=(2, 2))
@@ -77,7 +79,7 @@ class World():
         
         # filter step
         
-        if k%self.MEASUREMENT_FREQUENCY == 0 and k > 0: # take measurement every x timesteps
+        if k%self.MEASUREMENT_FREQUENCY == 0 and k >= self.DELAY: # take measurement every x timesteps
             print("--------------------")
             print("MEASUREMENT " + str(int(k/self.MEASUREMENT_FREQUENCY)))
            
@@ -127,7 +129,7 @@ class World():
         plt.pause(0.01) # this updates both plots
         
         if k == 3000-1:
-        #if k == 2:
+        #if k == 501:
             plt.close()
             exit()
 
@@ -165,7 +167,7 @@ class World():
     '''
         
     def create_cameras(self, n_cameras, sensor_noise):
-        initial_target_state = [self.coordinates[0, self.MEASUREMENT_FREQUENCY-1], self.velocities[0, self.MEASUREMENT_FREQUENCY-1],self.accelerations[0, self.MEASUREMENT_FREQUENCY-1], self.coordinates[1, self.MEASUREMENT_FREQUENCY-1], self.velocities[1, self.MEASUREMENT_FREQUENCY-1],self.accelerations[1, self.MEASUREMENT_FREQUENCY-1], self.coordinates[2, self.MEASUREMENT_FREQUENCY-1], self.velocities[2, self.MEASUREMENT_FREQUENCY-1],self.accelerations[2, self.MEASUREMENT_FREQUENCY-1]]
+        initial_target_state = [self.coordinates[0, self.MEASUREMENT_FREQUENCY-1 + self.DELAY], self.velocities[0, self.MEASUREMENT_FREQUENCY-1 +self.DELAY],self.accelerations[0, self.MEASUREMENT_FREQUENCY-1+self.DELAY], self.coordinates[1, self.MEASUREMENT_FREQUENCY-1+self.DELAY], self.velocities[1, self.MEASUREMENT_FREQUENCY-1+self.DELAY],self.accelerations[1, self.MEASUREMENT_FREQUENCY-1+self.DELAY], self.coordinates[2, self.MEASUREMENT_FREQUENCY-1+self.DELAY], self.velocities[2, self.MEASUREMENT_FREQUENCY-1+self.DELAY],self.accelerations[2, self.MEASUREMENT_FREQUENCY-1+self.DELAY]]
         ic(initial_target_state)
         
         cameras = []

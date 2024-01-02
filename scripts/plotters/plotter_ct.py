@@ -8,7 +8,7 @@ from matplotlib.animation import FuncAnimation
 from random import randrange
 import numpy as np
 
-class Plotter_CA():
+class Plotter_CT():
     
     def __init__(self, initial_pos, initial_vel, initial_accel):
         fig = plt.figure(figsize=(20, 8))
@@ -40,7 +40,7 @@ class Plotter_CA():
 
         # subplot x position
         fig.add_subplot(2, 3, 1)
-        plt.axis([0, 5, 0, 200])
+        plt.axis([0, 5, 0, 50])
         self.ln_x_m, = plt.plot(self.time, self.x_m, '-', label = 'measured', color='orangered')
         self.ln_x_r, = plt.plot(self.time, self.x_r, '-', label = 'real', color='blueviolet')
         self.ln_x_f, = plt.plot(self.time, self.x_f, '-', label = 'filtered', color='yellowgreen')
@@ -51,7 +51,7 @@ class Plotter_CA():
 
         # subplot x velocity
         fig.add_subplot(2, 3, 2)
-        plt.axis([0, 5, -0, 50])
+        plt.axis([0, 5, -35, 35])
         self.ln_vx_r, = plt.plot(self.time, self.vx_r, '-', label = 'real', color='blueviolet')
         self.ln_vx_f, = plt.plot(self.time, self.vx_f, '-', label = 'filtered', color='yellowgreen')
         plt.legend(handles = [self.ln_vx_r, self.ln_vx_f])
@@ -61,7 +61,7 @@ class Plotter_CA():
 
         # subplot x acceleration
         fig.add_subplot(2, 3, 3)
-        plt.axis([0, 5, 0, 10])
+        plt.axis([0, 5, -100, 100])
         self.ln_ax_r, = plt.plot(self.time, self.ax_r, '-', label = 'real', color='blueviolet')
         self.ln_ax_f, = plt.plot(self.time, self.ax_f, '-', label = 'filtered', color='yellowgreen')
         plt.legend(handles=[self.ln_ax_r, self.ln_ax_f])
@@ -81,7 +81,7 @@ class Plotter_CA():
 
         # subplot x velocity error
         fig.add_subplot(2, 3, 5)
-        plt.axis([0, 5, 0, 5])
+        plt.axis([0, 5, 0, 10])
         self.ln_error_vx, = plt.plot(self.time, self.error_vx, '-', label = 'RMSD Filtered', color='red')
         plt.legend(handles=[self.ln_error_vx])
         plt.title('RMSD x velocity')

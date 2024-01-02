@@ -36,6 +36,7 @@ class Plotter():
         #data points model probabilities
         self.model1 = [0]
         self.model2 = [0]
+        self.model3 = [0]
 
         # subplot x position
         fig.add_subplot(3, 2, 1)
@@ -77,7 +78,8 @@ class Plotter():
         plt.axis([0, 30, 0, 1])
         self.ln_model_1, = plt.plot(self.time, self.model1, '-', label = 'cv')
         self.ln_model_2, = plt.plot(self.time, self.model2, '-', label = 'ca')
-        plt.legend(handles=[self.ln_model_1, self.ln_model_2])
+        self.ln_model_3, = plt.plot(self.time, self.model3, '-', label = 'ct')
+        plt.legend(handles=[self.ln_model_1, self.ln_model_2, self.ln_model_3])
         plt.title('Model probabilities')
 
         fig.add_subplot(3, 2, 6)
@@ -130,9 +132,11 @@ class Plotter():
 
         # Plotting model probabilities
         self.model1.append(models[0].model_probability)
-        #self.model2.append(models[1].model_probability)
+        self.model2.append(models[1].model_probability)
+        self.model3.append(models[2].model_probability)
         self.ln_model_1.set_data(self.time, self.model1)
-        #self.ln_model_2.set_data(self.time, self.model2)
+        self.ln_model_2.set_data(self.time, self.model2)
+        self.ln_model_3.set_data(self.time, self.model3)
 
         # Plotting covariance
         self.covariance.set_data(models[0].updated_covariance/100)

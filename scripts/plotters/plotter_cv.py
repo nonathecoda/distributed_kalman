@@ -8,7 +8,7 @@ from matplotlib.animation import FuncAnimation
 from random import randrange
 import numpy as np
 
-class Plotter_CA():
+class Plotter_CV():
     
     def __init__(self, initial_pos, initial_vel, initial_accel):
         fig = plt.figure(figsize=(20, 8))
@@ -39,7 +39,7 @@ class Plotter_CA():
         self.model2 = [0]
 
         # subplot x position
-        fig.add_subplot(2, 3, 1)
+        fig.add_subplot(2, 2, 1)
         plt.axis([0, 5, 0, 200])
         self.ln_x_m, = plt.plot(self.time, self.x_m, '-', label = 'measured', color='orangered')
         self.ln_x_r, = plt.plot(self.time, self.x_r, '-', label = 'real', color='blueviolet')
@@ -50,7 +50,7 @@ class Plotter_CA():
         plt.ylabel('metres', loc = 'top', labelpad = 2.0, fontsize=9)
 
         # subplot x velocity
-        fig.add_subplot(2, 3, 2)
+        fig.add_subplot(2, 2, 2)
         plt.axis([0, 5, -0, 50])
         self.ln_vx_r, = plt.plot(self.time, self.vx_r, '-', label = 'real', color='blueviolet')
         self.ln_vx_f, = plt.plot(self.time, self.vx_f, '-', label = 'filtered', color='yellowgreen')
@@ -59,18 +59,8 @@ class Plotter_CA():
         plt.xlabel('seconds', loc = 'right', labelpad = 2.0, fontsize=9)
         plt.ylabel('metres/sec', loc = 'top', labelpad = 2.0, fontsize=9)
 
-        # subplot x acceleration
-        fig.add_subplot(2, 3, 3)
-        plt.axis([0, 5, 0, 10])
-        self.ln_ax_r, = plt.plot(self.time, self.ax_r, '-', label = 'real', color='blueviolet')
-        self.ln_ax_f, = plt.plot(self.time, self.ax_f, '-', label = 'filtered', color='yellowgreen')
-        plt.legend(handles=[self.ln_ax_r, self.ln_ax_f])
-        plt.title('x acceleration')
-        plt.xlabel('seconds', loc = 'right', labelpad = 2.0, fontsize=9)
-        plt.ylabel('metres/sec^2', loc = 'top', labelpad = 2.0, fontsize=9)
-
         # subplot x error
-        fig.add_subplot(2, 3, 4)
+        fig.add_subplot(2, 2, 3)
         plt.axis([0, 5, 0, 10])
         self.ln_error_x, = plt.plot(self.time, self.error_x, '-', label = 'RMSD Filtered', color='red')
         self.ln_error_mx, = plt.plot(self.time, self.error_x, '-', label = 'RMSD Measurements', color='orange')
@@ -80,22 +70,13 @@ class Plotter_CA():
         plt.ylabel('metres', loc = 'top', labelpad = 2.0, fontsize=9)
 
         # subplot x velocity error
-        fig.add_subplot(2, 3, 5)
-        plt.axis([0, 5, 0, 5])
+        fig.add_subplot(2, 2, 4)
+        plt.axis([0, 5, 0, 10])
         self.ln_error_vx, = plt.plot(self.time, self.error_vx, '-', label = 'RMSD Filtered', color='red')
         plt.legend(handles=[self.ln_error_vx])
         plt.title('RMSD x velocity')
         plt.xlabel('seconds', loc = 'right', labelpad = 2.0, fontsize=9)
         plt.ylabel('metres/sec', loc = 'top', labelpad = 2.0, fontsize=9)
-
-        # subplot x acceleration error
-        fig.add_subplot(2, 3, 6)
-        plt.axis([0, 5, 0, 5])
-        self.ln_error_ax, = plt.plot(self.time, self.error_ax, '-', label = 'RMSD Filtered', color='red')
-        plt.legend(handles=[self.ln_error_ax])
-        plt.title('RMSD x acceleration')
-        plt.xlabel('seconds', loc = 'right', labelpad = 2.0, fontsize=9)
-        plt.ylabel('metres/sec^2', loc = 'top', labelpad = 2.0, fontsize=9)
         
         plt.ion()
         print('Initialised Plotter')
@@ -118,12 +99,6 @@ class Plotter_CA():
         self.ln_vx_f.set_data(self.time, self.vx_f)
         self.ln_vx_r.set_data(self.time, self.vx_r)
 
-        # Plotting x acceleration
-        self.ax_f.append(models[0].updated_state[2][0]) #filtered pose is 6d! TODO: fix this 
-        self.ax_r.append(real_acceleration[0])
-        self.ln_ax_r.set_data(self.time, self.ax_r)
-        self.ln_ax_f.set_data(self.time, self.ax_f)
-
         # Plotting RMSD for x position
         rmsd_x = np.sqrt(np.mean((np.subtract(self.x_f,self.x_r))**2))
         self.error_x.append(rmsd_x)
@@ -137,8 +112,3 @@ class Plotter_CA():
         rmsd_vx = np.sqrt(np.mean((np.subtract(self.vx_f,self.vx_r))**2))
         self.error_vx.append(rmsd_vx)
         self.ln_error_vx.set_data(self.time, self.error_vx)
-
-        # Plotting RMSD for x acceleration
-        rmsd_ax = np.sqrt(np.mean((np.subtract(self.ax_f,self.ax_r))**2))
-        self.error_ax.append(rmsd_ax)
-        self.ln_error_ax.set_data(self.time, self.error_ax)

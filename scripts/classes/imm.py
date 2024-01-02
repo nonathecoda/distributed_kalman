@@ -22,9 +22,9 @@ class InteractingMultipleModel:
         #self.kalman = KalmanFilter(std_dev_process_noise=0.1, measurement_noise_r =  5, initial_pose=initial_pose)
         self.const_vel_model = CV_CYPR_Model(std_dev_process_noise_q=1, measurement_noise_r = 10, initial_pose=initial_pose_6d, name = "constant velocity")
         self.const_accel_model = CA_CYPR_Model(std_dev_process_noise_q=1, measurement_noise_r = 2000, initial_pose=initial_pose_9d, name = "constant acceleration")
-        self.turn_model = CP_CYPR_RATE_Model(std_dev_process_noise_q=10000, measurement_noise_r = 1, initial_pose=initial_pose_9d, name = "turn")
-        self.models = [self.const_vel_model, self.const_accel_model]
-        self.models = [self.const_accel_model]
+        self.turn_model = CP_CYPR_RATE_Model(std_dev_process_noise_q=1, measurement_noise_r = 10, initial_pose=initial_pose_9d, name = "turn")
+        self.models = [self.const_vel_model, self.const_accel_model, self.turn_model]
+        #self.models = [self.turn_model]
 
         cv2ca = np.array([
         [1, 0, 0, 0, 0, 0],
@@ -36,16 +36,25 @@ class InteractingMultipleModel:
         [0, 0, 0, 0, 1, 0],
         [0, 0, 0, 0, 0, 1],
         [0, 0, 0, 0, 0, 0]])
+
+        cv2cv = np.eye(6)
+        ca2ct = np.eye(9)
  
         self.model_transition_matrix = [[np.eye(6), cv2ca.T],
                                         [cv2ca, np.eye(9)]]
 
 
-        self.state_switching_matrix= np.array([[0.8, 0.2],
-                                               [0.25, 0.75]])
+        self.model_transition_matrix = [[np.eye(6),             cv2ca.T,    np.dot(cv2ca.T, ca2ct.T)],
+                                        [cv2ca,                 np.eye(9),  ca2ct.T],
+                                        [np.dot(ca2ct, cv2ca),  ca2ct,      np.eye(9)]]
+
+
+        self.state_switching_matrix= np.array([[0.8, 0.1, 0.1],
+                                               [0.1, 0.8, 0.1],
+                                               [0.1, 0.1, 0.8]])
         
-        self.state_switching_matrix= np.array([[1]])
-        self.model_transition_matrix = [[np.eye(9)]]
+        #self.state_switching_matrix= np.array([[1]])
+        #self.model_transition_matrix = [[np.eye(9)]]
 
         for count, probs in enumerate(self.state_switching_matrix[0]):
             self.models[count].model_probability = probs
@@ -106,6 +115,10 @@ class InteractingMultipleModel:
         for j, model_j in enumerate(self.models):
             c = 0
             for i, model_i in enumerate(self.models):
+                ic(model_i.name)
+                ic(c)
+                ic(model_i.likelihood)
+                ic(model_i.psi)
                 c = c + (model_i.likelihood*model_i.psi)
             model_j.model_probability = (1/c)*model_j.likelihood*model_j.psi
         
@@ -126,8 +139,8 @@ class InteractingMultipleModel:
         # Combine state estimates to combined state
         self.combined_state = np.zeros((6,1))
         for j, model_j in enumerate(self.models):
-            #self.combined_state = self.combined_state + (self.model_transition_matrix[0][j]@(model_j.updated_state * model_j.model_probability))
-            self.combined_state = self.combined_state + (cv2ca.T@(model_j.updated_state * model_j.model_probability))
+            self.combined_state = self.combined_state + (self.model_transition_matrix[0][j]@(model_j.updated_state * model_j.model_probability))
+            #self.combined_state = self.combined_state + (cv2ca.T@(model_j.updated_state * model_j.model_probability))
         # Combined covariance TODO: needed?
         #self.covariance = np.zeros((9,9))
         #for j, model_j in enumerate(self.models):

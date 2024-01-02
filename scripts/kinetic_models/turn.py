@@ -26,7 +26,7 @@ class CP_CYPR_RATE_Model(KalmanFilter):
 
     @dt.setter
     def dt(self, dt):
-        w = 5
+        w = 2
         self.state_transition_matrix =  np.array([[1,    w**(-1)*np.sin(w*dt),          w**(-2)*(1-np.cos(w*dt)),       0,                  0,                      0,                          0,      0,                      0                       ],
                                                   [0,    np.cos(w*dt),                  w**(-1)*np.sin(w*dt),           0,                  0,                      0,                          0,      0,                      0                       ],
                                                   [0,    -w*np.sin(w*dt),               np.cos(w*dt),                   0,                  0,                      0,                          0,      0,                      0                       ],

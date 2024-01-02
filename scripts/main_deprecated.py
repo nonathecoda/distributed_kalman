@@ -8,7 +8,7 @@ import time
 from classes.target import Target
 from classes.camera import Camera
 from classes.imm import InteractingMultipleModel
-from classes.plotter import Plotter
+from scripts.plotters.plotter import Plotter
 from kinetic_models.const_velocity import CV_CYPR_Model
 
 
