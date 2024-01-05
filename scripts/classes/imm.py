@@ -5,6 +5,7 @@ import math
 from kinetic_models.const_acceleration import CA_CYPR_Model
 from kinetic_models.const_velocity import CV_CYPR_Model
 from kinetic_models.turn import CP_CYPR_RATE_Model
+from kinetic_models.orbit import Orbit_Model
 from classes.kalman import KalmanFilter
 
 class InteractingMultipleModel:
@@ -18,15 +19,16 @@ class InteractingMultipleModel:
 
         initial_pose_9d = np.reshape(initial_target_state, (9,1))
         initial_pose_6d = np.delete(initial_pose_9d, [2,5,8], 0)
+        initial_pose_5d = np.delete(initial_pose_6d, [-1], 0)
         
         #self.kalman = KalmanFilter(std_dev_process_noise=0.1, measurement_noise_r =  5, initial_pose=initial_pose)
-        self.const_vel_model = CV_CYPR_Model(std_dev_process_noise_q=1, measurement_noise_r = 10, initial_pose=initial_pose_6d, name = "constant velocity")
-        self.const_accel_model = CA_CYPR_Model(std_dev_process_noise_q=1, measurement_noise_r = 2000, initial_pose=initial_pose_9d, name = "constant acceleration")
-        self.turn_model = CP_CYPR_RATE_Model(std_dev_process_noise_q=1, measurement_noise_r = 10, initial_pose=initial_pose_9d, name = "turn")
-        self.models = [self.const_vel_model, self.const_accel_model, self.turn_model]
-        #self.models = [self.turn_model]
-
-        cv2ca = np.array([
+        self.const_vel_model = CV_CYPR_Model(std_dev_process_noise_q=25, measurement_noise_r = 1, initial_pose=initial_pose_6d, name = "constant velocity")
+        self.const_accel_model = CA_CYPR_Model(std_dev_process_noise_q=1, measurement_noise_r = 1000, initial_pose=initial_pose_9d, name = "constant acceleration")
+        self.orbit_model = Orbit_Model(std_dev_process_noise_q=1, measurement_noise_r = 1, initial_pose=initial_pose_5d, name = "orbit")
+        #self.turn_model = CP_CYPR_RATE_Model(std_dev_process_noise_q=0.1, measurement_noise_r = 1, initial_pose=initial_pose_9d, name = "turn")
+        
+        #state transition matrices
+        self.cv2ca = np.array([
         [1, 0, 0, 0, 0, 0],
         [0, 1, 0, 0, 0, 0],
         [0, 0, 0, 0, 0, 0],
@@ -37,30 +39,48 @@ class InteractingMultipleModel:
         [0, 0, 0, 0, 0, 1],
         [0, 0, 0, 0, 0, 0]])
 
+        self.cv2ct = np.array([
+        [1, 0, 0, 0, 0, 0],
+        [0, 1, 0, 0, 0, 0],
+        [0, 0, 1, 0, 0, 0],
+        [0, 0, 0, 1, 0, 0],
+        [0, 0, 0, 0, 1, 0]])
+
+
+
+        ### 1 Model ###
+        self.models = [self.const_accel_model]
+        self.state_switching_matrix= np.array([[1]])
+        self.model_transition_matrix = [[np.eye(9)]]
+        
+        ### 2 Models ###
+
+        #self.models = [self.const_vel_model, self.orbit_model]
+        #self.model_transition_matrix = [[np.eye(6), self.cv2ct.T],
+        #                                [self.cv2ct, np.eye(5)]]
+        #self.state_switching_matrix= np.array([[0.98, 0.02],
+        #                                       [0.02, 0.98]])
+
+        
+        ### 3 Models ###
+        #self.models = [self.const_vel_model, self.const_accel_model, self.turn_model]
+        
+
         cv2cv = np.eye(6)
         ca2ct = np.eye(9)
- 
-        self.model_transition_matrix = [[np.eye(6), cv2ca.T],
-                                        [cv2ca, np.eye(9)]]
+        #self.model_transition_matrix = [[np.eye(6),             cv2ca.T,    np.dot(cv2ca.T, ca2ct.T)],
+        #                                [cv2ca,                 np.eye(9),  ca2ct.T],
+        #                                [np.dot(ca2ct, cv2ca),  ca2ct,      np.eye(9)]]
 
 
-        self.model_transition_matrix = [[np.eye(6),             cv2ca.T,    np.dot(cv2ca.T, ca2ct.T)],
-                                        [cv2ca,                 np.eye(9),  ca2ct.T],
-                                        [np.dot(ca2ct, cv2ca),  ca2ct,      np.eye(9)]]
-
-
-        self.state_switching_matrix= np.array([[0.8, 0.1, 0.1],
-                                               [0.1, 0.8, 0.1],
-                                               [0.1, 0.1, 0.8]])
+        #self.state_switching_matrix= np.array([[0.98, 0.01, 0.01],
+        #                                       [0.01, 0.98, 0.01],
+        #                                       [0.01, 0.01, 0.98]])
         
-        #self.state_switching_matrix= np.array([[1]])
-        #self.model_transition_matrix = [[np.eye(9)]]
 
         for count, probs in enumerate(self.state_switching_matrix[0]):
             self.models[count].model_probability = probs
 
-        #self.models[0].model_probability = 0.1
-        #self.models[1].model_probability = 0.9
 
         self.covariance = None
         self.combined_state = None
@@ -82,6 +102,8 @@ class InteractingMultipleModel:
                 mu_ij = (1/model_j.psi)*self.state_switching_matrix[i][j]*model_i.model_probability
                 model_j.mixed_state = model_j.mixed_state + (self.model_transition_matrix[j][i] @ (model_i.updated_state * mu_ij))
                 
+        '''
+        ### I think its not needed
         # Calculate mixed covariances for each model
         for j, model_j in enumerate(self.models):
             model_j.mixed_covariance = np.zeros((model_j.dims,model_j.dims))
@@ -89,6 +111,7 @@ class InteractingMultipleModel:
                 mu_ij = (1/model_j.psi)*self.state_switching_matrix[i][j]*model_i.model_probability                
                 dummy_P = model_i.updated_covariance + ((model_i.updated_state - model_i.mixed_state)@ np.transpose(model_i.updated_state - model_i.mixed_state))
                 model_j.mixed_covariance = model_j.mixed_covariance + (mu_ij* (self.model_transition_matrix[j][i] @ dummy_P @ self.model_transition_matrix[j][i].T))
+        '''
 
         # Execute Kalman Filter for each model
         for model in self.models:
@@ -99,48 +122,51 @@ class InteractingMultipleModel:
             else:
                 a_dummy = a
                 F_dummy = F
+            '''
+            elif model.dims == 5:
+                a_dummy = np.delete(a, [2,5,7,8], 0)
+                F_dummy = np.delete(F, [2,5,7,8], 0)
+                F_dummy = np.delete(F_dummy, [2,5,7,8], 1)
+            '''
             model.predict(timestep)
-            model.update(measured_pose, distributed, a_dummy, F_dummy)
+            model.update(measured_pose, distributed, model.avg_a, model.avg_F)
 
         # Update likelihood for each model
         for j, model_j in enumerate(self.models):
-            Z_j = measured_pose - model_j.H @ model_j.predicted_state
+            try:
+                Z_j = measured_pose - model_j.H @ model_j.predicted_state
+            except ValueError:
+                measured_pose_dummy = np.delete(measured_pose, [-1], 0)
+                Z_j = measured_pose_dummy - model_j.H @ model_j.predicted_state
+
             S_j = model_j.H @ model_j.predicted_covariance @ np.transpose(model_j.H) + model_j.R
             try:
                 model_j.likelihood = (1/np.sqrt(np.linalg.det(2*math.pi*S_j))) * np.exp(-0.5 * ((np.transpose(Z_j) @ np.linalg.inv(S_j) @ Z_j)[0][0]))
             except FloatingPointError: # underflow error? It's because the predicted covariance is too big -> model apparently has a very low likelihood
+                print("FloatingPointError 2")
                 model_j.likelihood = 1.0e-100
 
         # Update probability for each model
         for j, model_j in enumerate(self.models):
             c = 0
             for i, model_i in enumerate(self.models):
-                ic(model_i.name)
-                ic(c)
-                ic(model_i.likelihood)
-                ic(model_i.psi)
-                c = c + (model_i.likelihood*model_i.psi)
+                try:
+                    c = c + (model_i.likelihood*model_i.psi)
+                except FloatingPointError: # underflow error? It's because the predicted covariance is too big -> model apparently has a very low likelihood
+                    print("FloatingPointError 2")
+                    c = c + 1.0e-100
             model_j.model_probability = (1/c)*model_j.likelihood*model_j.psi
         
         # for using only constant acceleration, replace combined state formula
-        cv2ca = np.array([
-        [1, 0, 0, 0, 0, 0],
-        [0, 1, 0, 0, 0, 0],
-        [0, 0, 0, 0, 0, 0],
-        [0, 0, 1, 0, 0, 0],
-        [0, 0, 0, 1, 0, 0],
-        [0, 0, 0, 0, 0, 0],
-        [0, 0, 0, 0, 1, 0],
-        [0, 0, 0, 0, 0, 1],
-        [0, 0, 0, 0, 0, 0]])
         '''
-        self.combined_state = self.combined_state + (cv2ca.T@(model_j.updated_state * model_j.model_probability))
+        self.combined_state = self.combined_state + (self.cv2ca.T@(model_j.updated_state * model_j.model_probability))
         '''
         # Combine state estimates to combined state
         self.combined_state = np.zeros((6,1))
         for j, model_j in enumerate(self.models):
-            self.combined_state = self.combined_state + (self.model_transition_matrix[0][j]@(model_j.updated_state * model_j.model_probability))
-            #self.combined_state = self.combined_state + (cv2ca.T@(model_j.updated_state * model_j.model_probability))
+            #self.combined_state = self.combined_state + (self.model_transition_matrix[0][j]@(model_j.updated_state * model_j.model_probability))
+            self.combined_state = self.combined_state + (self.cv2ca.T@(model_j.updated_state * model_j.model_probability))
+       
         # Combined covariance TODO: needed?
         #self.covariance = np.zeros((9,9))
         #for j, model_j in enumerate(self.models):

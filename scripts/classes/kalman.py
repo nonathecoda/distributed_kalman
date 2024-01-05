@@ -19,7 +19,7 @@ class KalmanFilter():
         self.state_transition_matrix = None
         self.std_dev_process_noise = std_dev_process_noise_q
         self.updated_state = initial_pose
-        self.updated_covariance = np.identity(initial_pose.shape[0]); np.fill_diagonal(self.updated_covariance, 0.1) #dont put this to zero, otherwise the filter will diverge for some reason :(
+        self.microgain = np.identity(initial_pose.shape[0]); np.fill_diagonal(self.microgain, 0.1) #dont put this to zero, otherwise the filter will diverge for some reason :(
 
         self.I = np.identity(initial_pose.shape[0])
         self.H = H
@@ -29,16 +29,22 @@ class KalmanFilter():
         # IMM variables
         self.model_probability = None
         self.mixed_state = None
-        self.mixed_covariance = None
         self.psi = 0
         self.likelihood = None
+
+        #Distributed stuff
+        self.received_a = []
+        self.received_F = []
+
+        self.avg_a = None
+        self.avg_F = None
+
 
     def predict(self, dt):
         print("Kalman predict " + self.name)
         self.dt = dt
         self.predicted_state = self.state_transition_matrix @ self.mixed_state
-        self.predicted_covariance = (self.state_transition_matrix @ self.mixed_covariance @ np.transpose(self.state_transition_matrix)) + self.process_noise_matrix
-        
+        self.predicted_covariance = (self.state_transition_matrix @ self.microgain @ np.transpose(self.state_transition_matrix)) + self.process_noise_matrix
         print(self.name, ":")
         #ic(self.predicted_covariance)
         ic(self.predicted_state)
@@ -47,21 +53,28 @@ class KalmanFilter():
             print("predicted covariance has negative diagonal")
             exit()
 
+    
+
     def update(self, z, distributed, a = None, F = None):
-        
+        '''
+        Large Kalman gains correspond to low measurement noise, and so when measurement noise is low,
+        we can subtract off a lot of our current uncertainty. When measurement noise is high, the gain will be small,
+        so we won't subtract off very much.
+        '''
         print("Kalman update " + self.name)
         if distributed == True:
-            self.updated_covariance = np.linalg.inv(np.linalg.inv(self.predicted_covariance) + F)
-            ic(F)
-            if has_negative_diagonal(self.updated_covariance):
+            
+            #TODO: where is this from? https://ieeexplore.ieee.org/stamp/stamp.jsp?tp=&arnumber=4434303 /https://citeseerx.ist.psu.edu/document?repid=rep1&type=pdf&doi=a6c9a3a6cd43b0447f9bd92547cc13aeacb346dc
+            self.microgain = np.linalg.inv(np.linalg.inv(self.predicted_covariance) + F)
+            self.updated_state = self.predicted_state + self.microgain @ (a - F @ self.predicted_state)
+            ic(self.microgain)
+            ic(np.linalg.inv(self.microgain))
+            ic(self.updated_state)
+            
+            if has_negative_diagonal(self.microgain):
                 print(self.name + ": updated_covariance has negative diagonal.")
                 exit()
-            self.updated_state = self.predicted_state + np.linalg.inv(self.updated_covariance) @ (a - F @ self.predicted_state)
-            ic(self.updated_state)
-            ic(self.updated_covariance)
-            ic(np.linalg.inv(self.updated_covariance) @ (a - F @ self.predicted_state))
         else:
-            
             K = (self.predicted_covariance @ np.transpose(self.H)) @ np.linalg.inv((self.H @ self.predicted_covariance @ np.transpose(self.H)) + self.R)
             self.updated_state = self.predicted_state + K @ (z - self.H @ self.predicted_state)
             self.updated_covariance = (self.I - K @ self.H) @ self.predicted_covariance @ np.transpose(self.I - K @ self.H) + K @ self.R @ np.transpose(K) # Joseph form

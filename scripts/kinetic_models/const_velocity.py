@@ -39,6 +39,7 @@ class CV_CYPR_Model(KalmanFilter):
                       [0.5*np.square(timestep)  ],
                       [timestep                 ]])
         self.process_noise_matrix = (G @ np.transpose(G)) * np.square(self.std_dev_process_noise)
+        #self.process_noise_matrix = np.eye(self.state_transition_matrix.shape[0])
     
     
    

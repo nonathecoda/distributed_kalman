@@ -24,7 +24,6 @@ class CA_CYPR_Model(KalmanFilter):
 
     @dt.setter
     def dt(self, timestep):
-        ic(timestep)
         self.state_transition_matrix =  np.array([[1,    timestep,       0.5*timestep*timestep,     0,      0,          0,                      0,      0,          0                   ],
                                                   [0,    1,              timestep,                  0,      0,          0,                      0,      0,          0                   ],
                                                   [0,    0,              1,                         0,      0,          0,                      0,      0,          0                   ],
@@ -46,5 +45,6 @@ class CA_CYPR_Model(KalmanFilter):
                         [timestep                   ]])
         
         self.process_noise_matrix = np.matmul(G, np.transpose(G)) * np.square(self.std_dev_process_noise)
+        #self.process_noise_matrix = np.eye(self.state_transition_matrix.shape[0])
     
         

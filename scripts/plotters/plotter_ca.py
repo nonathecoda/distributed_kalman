@@ -103,7 +103,7 @@ class Plotter_CA():
 
     def update_plot(self, measurements, filtered_pose, real_position, real_velocity, real_acceleration, timestamp, models):
         
-        self.time.append(timestamp-0.01)
+        self.time.append(timestamp-0.1)
         # Plotting x position
         self.x_m.append(measurements[0])
         self.x_f.append(filtered_pose[0])

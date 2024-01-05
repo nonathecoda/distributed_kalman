@@ -9,7 +9,7 @@ from classes.target import Target
 from classes.camera import Camera
 from classes.imm import InteractingMultipleModel
 from kinetic_models.const_velocity import CV_CYPR_Model
-from classes.path import get_figure_eight, get_constant_acceleration, get_constant_turn, get_cv_ct_ca
+from classes.path import get_figure_eight, get_constant_acceleration, get_constant_velocity, get_constant_turn, get_ca_ct_cv, get_orbit
 from plotters.plotter_ca import Plotter_CA
 from plotters.plotter import Plotter
 from plotters.plotter_cv import Plotter_CV
@@ -18,21 +18,21 @@ from plotters.plotter_ct import Plotter_CT
 class World():
     def __init__(self):
         self.MEASUREMENT_FREQUENCY = 1
-        TURN_RATE = 2
+        TURN_RATE = 1
         self.DELAY = 2
 
         # create path
-        initial_pos = np.array([20, 20, 20])
-        initial_vel = np.array([30, 30, 30])
-        initial_accel = np.array([10, 10, 10])
+        initial_pos = np.array([200, 2, 50]) #m
+        initial_vel = np.array([15, 15, 15]) #m/dt*seconds
+        initial_accel = np.array([1, 1, 1]) #m/(dt*seconds)^2
 
-        self.dt = 0.01 #seconds
-        self.coordinates, self.velocities, self.accelerations, self.timestamps = get_cv_ct_ca(TURN_RATE, initial_pos, initial_vel, initial_accel, self.dt)
+        self.dt = 0.1 #seconds
+        self.coordinates, self.velocities, self.accelerations, self.timestamps = get_constant_acceleration(initial_pos, initial_vel, initial_accel, self.dt)
         #self.coordinates, self.velocities, self.accelerations, self.timestamps = get_figure_eight(dt = self.dt)
 
         # create cameras
         N_CAMERAS = 2
-        SENSOR_NOISE = 5
+        SENSOR_NOISE = 0.1
         if N_CAMERAS > 1:
             self.distributed = True
         else:
@@ -68,31 +68,23 @@ class World():
         self.target.set_position(self.coordinates[:, k])
         self.target.set_velocity(self.velocities[:, k])
         self.target.set_acceleration(self.accelerations[:, k])
-        ic(k)
-        ic(self.target.get_position())
-        ic(self.target.get_velocity())
-        ic(self.target.get_acceleration())
         
         # update animation
         self.line.set_data(self.coordinates[:2, :k])
         self.line.set_3d_properties(self.coordinates[2, :k])
         
         # filter step
-        
-        if k%self.MEASUREMENT_FREQUENCY == 0 and k >= self.DELAY: # take measurement every x timesteps
+        if k%self.MEASUREMENT_FREQUENCY == 0 and k > self.DELAY: # take measurement every x timesteps
             print("--------------------")
-            print("MEASUREMENT " + str(int(k/self.MEASUREMENT_FREQUENCY)))
-           
-            
-            ic(self.target.get_position())
-            ic(self.target.get_velocity())
-            ic(self.target.get_acceleration())
-            #exit()
+            print("MEASUREMENT " + str(int(k/self.MEASUREMENT_FREQUENCY-self.DELAY)))
             
             for cam in self.cameras:
                 cam.take_position_measurement(self.target.get_position())
                 cam.take_velocity_measurement(self.target.get_velocity())
                 cam.take_acceleration_measurement(self.target.get_acceleration())
+            
+            ic(self.target.get_position()[0])
+            ic(self.target.get_velocity()[0])
 
             if self.distributed == True:
                 # calculate average consensus
@@ -106,65 +98,39 @@ class World():
                     round += 1
                     consensus_reached = True
                     for cam in self.cameras:
-                        cam.send_messages(cam.avg_a, cam.avg_F)
+                        cam.send_messages_imm()
+                        #cam.send_messages(cam.avg_a, cam.avg_F)
                     for cam in self.cameras:
                         cam.calculate_average_consensus()
                     for cam in self.cameras:
                         for neighbor in cam.neighbors:
-                            if not np.allclose(neighbor.avg_a, cam.avg_a, atol = 1e-08):
+                            '''if not np.allclose(neighbor.avg_a, cam.avg_a, atol = 1e-08):
                                 consensus_reached = False
-                            if not np.allclose(neighbor.avg_F, cam.avg_F,  atol = 1e-08):
+                            if not np.allclose(neighbor.avg_F, cam.avg_F, atol = 1e-08):
                                 consensus_reached = False
+                            '''
+                            for model_index in range(len(neighbor.imm.models)):
+                                if not np.allclose(neighbor.imm.models[model_index].avg_a, cam.imm.models[model_index].avg_a, atol = 1e-08):
+                                    consensus_reached = False
+                                if not np.allclose(neighbor.imm.models[model_index].avg_F, cam.imm.models[model_index].avg_F, atol = 1e-08):
+                                    consensus_reached = False
+                            
                 print("Cameras reached consensus after " + str(round) + " round(s).")
-            
+                
             for cam in self.cameras:
-                filtered_pose, models = cam.imm.update_pose(timestep = self.dt, distributed = self.distributed, a = cam.avg_a, F = cam.avg_F)
-                cam.avg_a = None
-                cam.avg_F = None
+                filtered_pose, models = cam.imm.update_pose(timestep = self.dt, distributed = self.distributed, a = None, F = None)
+                for model in cam.imm.models:
+                    model.avg_a = None
+                    model.avg_F = None
             
             self.plotter.update_plot(cam.get_measurements().flatten(), filtered_pose.flatten(), self.target.get_position(), self.target.get_velocity(), self.target.get_acceleration(), self.timestamps[k], models)
-            ic(cam.get_measurements().flatten())
-            ic(filtered_pose)
         
         plt.pause(0.01) # this updates both plots
         
         if k == 3000-1:
-        #if k == 501:
+        #if k == 3:
             plt.close()
             exit()
-
-    '''
-    def create_path(self, initial_pos, initial_vel, initial_accel, dt):
-        # initial_pos: initial position of the object (3d vector)
-        # initial_vel: initial velocity of the object (3d vector)
-        # initial_accel: initial acceleration of the object (3d vector)
-        # dt: time step
-        # return: coordinates, velocities, accelerations, timestamps
-
-        coordinates = np.zeros((3, 3000), dtype = float)
-        velocities = np.zeros((3, 3000), dtype = float)
-        accelerations = np.zeros((3, 3000), dtype = float)
-        timestamps = np.zeros((3000), dtype = float)
-
-        for i in range(3000):
-            if i == 0:
-                coordinates[:, i] = initial_pos
-                velocities[:, i] = initial_vel
-                accelerations[:, i] = initial_accel
-                timestamps[i] = 0
-            if i < 150:
-                coordinates[:, i] = coordinates[:, i-1] + velocities[:, i-1] * dt
-                velocities[:, i] = velocities[:, i-1]
-                accelerations[:, i] = np.array([0, 0, 0])
-                timestamps[i] = timestamps[i-1] + dt
-            else:
-                coordinates[:, i] = coordinates[:, i-1] + velocities[:, i-1] * dt + 0.5 * accelerations[:, i-1] * dt**2
-                velocities[:, i] = velocities[:, i-1] + accelerations[:, i-1] * dt
-                accelerations[:, i] = self.ACCELERATION
-                timestamps[i] = timestamps[i-1] + dt
-
-        return coordinates, velocities, accelerations, timestamps
-    '''
         
     def create_cameras(self, n_cameras, sensor_noise):
         initial_target_state = [self.coordinates[0, self.MEASUREMENT_FREQUENCY-1 + self.DELAY], self.velocities[0, self.MEASUREMENT_FREQUENCY-1 +self.DELAY],self.accelerations[0, self.MEASUREMENT_FREQUENCY-1+self.DELAY], self.coordinates[1, self.MEASUREMENT_FREQUENCY-1+self.DELAY], self.velocities[1, self.MEASUREMENT_FREQUENCY-1+self.DELAY],self.accelerations[1, self.MEASUREMENT_FREQUENCY-1+self.DELAY], self.coordinates[2, self.MEASUREMENT_FREQUENCY-1+self.DELAY], self.velocities[2, self.MEASUREMENT_FREQUENCY-1+self.DELAY],self.accelerations[2, self.MEASUREMENT_FREQUENCY-1+self.DELAY]]
