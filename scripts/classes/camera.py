@@ -13,8 +13,6 @@ class Camera():
         self.velocity_measurement = None
         self.acceleration_measurement = None
         self.neighbors = []
-        self.avg_a = None
-        self.avg_F = None
 
         self.received_a = []
         self.received_F = []
@@ -38,23 +36,8 @@ class Camera():
                                 self.position_measurement[1],
                                 self.position_measurement[2]])
         return measurement.reshape((3,1))
-    
-    #@DeprecationWarning
-    def send_messages(self, a, F):
-        # TODO: implement that each model gets their own a/F!!!
-        if a is None and F is None:
-            a = np.transpose(self.imm.const_accel_model.H) @ np.linalg.inv(self.imm.const_accel_model.R) @ self.get_measurements()
-            F = np.transpose(self.imm.const_accel_model.H) @ np.linalg.inv(self.imm.const_accel_model.R) @ self.imm.const_accel_model.H
-
-        self.received_a.append(a)
-        self.received_F.append(F)
-        
-        for n in self.neighbors:
-            n.received_a.append(a)
-            n.received_F.append(F)
 
     def send_messages_imm(self):
-
         for model in self.imm.models:
             if model.avg_a is None and model.avg_F is None:
                 model.avg_a = np.transpose(model.H) @ np.linalg.inv(model.R) @ self.get_measurements()
@@ -63,6 +46,7 @@ class Camera():
                 ic(model.name)
                 ic(model.avg_a)
                 ic(model.avg_F)
+                
         for model in self.imm.models:
             model.received_a.append(model.avg_a)
             model.received_F.append(model.avg_F)
@@ -74,13 +58,6 @@ class Camera():
                 n.imm.models[m_index].received_F.append(self.imm.models[m_index].avg_F)
 
     def calculate_average_consensus(self):
-        '''
-        self.avg_a = np.sum(self.received_a, axis=0) / len(self.received_a)    
-        self.avg_F = np.sum(self.received_F, axis=0) / len(self.received_a)
-        self.received_a = []
-        self.received_F = []
-        
-        '''
         for model in self.imm.models:
             
             model.avg_a = np.sum(model.received_a, axis=0) / len(model.received_a)
@@ -88,11 +65,4 @@ class Camera():
 
             model.received_a = []
             model.received_F = []
-
-            ic(self.name)
-            ic(model.name)
-            ic(model.avg_a)
-            ic(model.avg_F)
-        
-
             

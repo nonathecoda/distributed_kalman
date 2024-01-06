@@ -64,11 +64,9 @@ class KalmanFilter():
         print("Kalman update " + self.name)
         if distributed == True:
             
-            #TODO: where is this from? https://ieeexplore.ieee.org/stamp/stamp.jsp?tp=&arnumber=4434303 /https://citeseerx.ist.psu.edu/document?repid=rep1&type=pdf&doi=a6c9a3a6cd43b0447f9bd92547cc13aeacb346dc
+            # https://ieeexplore.ieee.org/stamp/stamp.jsp?tp=&arnumber=4434303 /https://citeseerx.ist.psu.edu/document?repid=rep1&type=pdf&doi=a6c9a3a6cd43b0447f9bd92547cc13aeacb346dc
             self.microgain = np.linalg.inv(np.linalg.inv(self.predicted_covariance) + F)
             self.updated_state = self.predicted_state + self.microgain @ (a - F @ self.predicted_state)
-            ic(self.microgain)
-            ic(np.linalg.inv(self.microgain))
             ic(self.updated_state)
             
             if has_negative_diagonal(self.microgain):

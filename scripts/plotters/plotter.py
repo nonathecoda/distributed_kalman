@@ -40,7 +40,7 @@ class Plotter():
 
         # subplot x position
         fig.add_subplot(3, 2, 1)
-        plt.axis([0, 300, -100, 1000])
+        plt.axis([0, 300, -100, 5000])
         self.ln_x_m, = plt.plot(self.time, self.x_m, '-', label = 'measured')
         self.ln_x_f, = plt.plot(self.time, self.x_f, '-', label = 'filtered')
         self.ln_x_r, = plt.plot(self.time, self.x_r, '-', label = 'real')
@@ -78,7 +78,7 @@ class Plotter():
         plt.axis([0, 300, -0.1, 1.1])
         self.ln_model_1, = plt.plot(self.time, self.model1, '-', label = 'cv')
         self.ln_model_2, = plt.plot(self.time, self.model2, '-', label = 'ca')
-        self.ln_model_3, = plt.plot(self.time, self.model3, '-', label = 'ct')
+        self.ln_model_3, = plt.plot(self.time, self.model3, '-', label = 'orbit')
         plt.legend(handles=[self.ln_model_1, self.ln_model_2, self.ln_model_3])
         plt.title('Model probabilities')
 
@@ -137,10 +137,10 @@ class Plotter():
         # Plotting model probabilities
         self.model1.append(models[0].model_probability)
         self.ln_model_1.set_data(self.time, self.model1)
-        #self.model2.append(models[1].model_probability)
-        #self.ln_model_2.set_data(self.time, self.model2)
-        #self.model3.append(models[2].model_probability)
-        #self.ln_model_3.set_data(self.time, self.model3)
+        self.model2.append(models[1].model_probability)
+        self.ln_model_2.set_data(self.time, self.model2)
+        self.model3.append(models[2].model_probability)
+        self.ln_model_3.set_data(self.time, self.model3)
 
         # Plotting covariance
         self.covariance.set_data(models[0].microgain/100)
