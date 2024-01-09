@@ -4,8 +4,8 @@ import math
 
 from kinetic_models.const_acceleration import CA_CYPR_Model
 from kinetic_models.const_velocity import CV_CYPR_Model
-from kinetic_models.turn import CP_CYPR_RATE_Model
-from kinetic_models.orbit import Orbit_Model
+from kinetic_models.const_turn import Const_Turn_Model
+from kinetic_models.const_position import Const_Pos_Model
 from classes.kalman import KalmanFilter
 
 class InteractingMultipleModel:
@@ -20,12 +20,14 @@ class InteractingMultipleModel:
         initial_pose_9d = np.reshape(initial_target_state, (9,1))
         initial_pose_6d = np.delete(initial_pose_9d, [2,5,8], 0)
         initial_pose_5d = np.delete(initial_pose_6d, [-1], 0)
+        initial_pose_3d = np.delete(initial_pose_5d, [1, 3], 0)
+
         
         #self.kalman = KalmanFilter(std_dev_process_noise=0.1, measurement_noise_r =  5, initial_pose=initial_pose)
-        self.const_vel_model = CV_CYPR_Model(std_dev_process_noise_q=1, measurement_noise_r = 50, initial_pose=initial_pose_6d, name = "constant velocity")
-        self.const_accel_model = CA_CYPR_Model(std_dev_process_noise_q=10, measurement_noise_r = 50, initial_pose=initial_pose_9d, name = "constant acceleration")
-        self.orbit_model = Orbit_Model(std_dev_process_noise_q=1, measurement_noise_r = 50, initial_pose=initial_pose_5d, name = "orbit")
-        #self.turn_model = CP_CYPR_RATE_Model(std_dev_process_noise_q=0.1, measurement_noise_r = 1, initial_pose=initial_pose_9d, name = "turn")
+        self.const_vel_model = CV_CYPR_Model(std_dev_process_noise_q=10, measurement_noise_r = 18, initial_pose=initial_pose_6d, name = "constant velocity")
+        self.const_accel_model = CA_CYPR_Model(std_dev_process_noise_q=10, measurement_noise_r = 20, initial_pose=initial_pose_9d, name = "constant acceleration")
+        self.orbit_model = Const_Turn_Model(std_dev_process_noise_q=100000, measurement_noise_r =5, initial_pose=initial_pose_5d, name = "constant turn")
+        self.const_pos_model = Const_Pos_Model(std_dev_process_noise_q=10, measurement_noise_r = 25, initial_pose=initial_pose_3d, name = "constant position")
         
         #state transition matrices
         self.cv2ca = np.array([
@@ -53,6 +55,11 @@ class InteractingMultipleModel:
             [0, 0, 0, 1, 0, 0, 0, 0, 0],
             [0, 0, 0, 0, 1, 0, 0, 0, 0],
             [0, 0, 0, 0, 0, 0, 1, 0, 0]])
+        
+        orbit2cp = np.array([
+            [1, 0, 0, 0, 0],
+            [0, 0, 1, 0, 0],
+            [0, 0, 0, 0, 1]])
 
         ### 1 Model ###
         #self.models = [self.orbit_model]
@@ -70,20 +77,22 @@ class InteractingMultipleModel:
         
         ### 3 Models ###
         
-        self.models = [self.const_vel_model, self.const_accel_model, self.orbit_model]
+        self.models = [self.const_vel_model, self.const_accel_model, self.orbit_model, self.const_pos_model]
         
 
-        self.model_transition_matrix = [[np.eye(6),                     self.cv2ca.T,       np.dot(self.cv2ca.T, ca2orbit.T)],
-                                        [self.cv2ca,                    np.eye(9),          ca2orbit.T],
-                                        [np.dot(ca2orbit, self.cv2ca),  ca2orbit,           np.eye(5)]]
+        self.model_transition_matrix = [[np.eye(6),                     self.cv2ca.T,       np.dot(self.cv2ca.T, ca2orbit.T), self.cv2ca.T@ca2orbit.T@orbit2cp.T],
+                                        [self.cv2ca,                    np.eye(9),          ca2orbit.T, np.dot(ca2orbit.T, orbit2cp.T)],
+                                        [np.dot(ca2orbit, self.cv2ca),  ca2orbit,           np.eye(5), orbit2cp.T],
+                                        [orbit2cp@ca2orbit@self.cv2ca,  orbit2cp@ca2orbit,     orbit2cp, np.eye(3)]]
 
 
-        self.state_switching_matrix= np.array([[0.98, 0.01, 0.01],
-                                               [0.01, 0.98, 0.01],
-                                               [0.01, 0.01, 0.98]])
+        self.state_switching_matrix= np.array([[0.97, 0.01, 0.01, 0.01],
+                                               [0.01, 0.97, 0.01, 0.01],
+                                               [0.01, 0.01, 0.97, 0.01],
+                                               [0.01, 0.01, 0.01, 0.97]])
         
         
-        for count, probs in enumerate(self.state_switching_matrix[0]):
+        for count, probs in enumerate(self.state_switching_matrix[3]):
             self.models[count].model_probability = probs
 
 
@@ -98,13 +107,13 @@ class InteractingMultipleModel:
         for j, model_j in enumerate(self.models):
             model_j.psi = 0
             for i, model_i in enumerate(self.models):
-                model_j.psi = model_j.psi + (self.state_switching_matrix[i][j]*model_i.model_probability)
+                model_j.psi = model_j.psi + (self.state_switching_matrix[i][j]*model_i.model_probability) #predicted model probability
             
         # Calculate mixed states for each model
         for j, model_j in enumerate(self.models):
             model_j.mixed_state = np.zeros((model_j.dims,1))
             for i, model_i in enumerate(self.models):
-                mu_ij = (1/model_j.psi)*self.state_switching_matrix[i][j]*model_i.model_probability
+                mu_ij = (1/model_j.psi)*self.state_switching_matrix[i][j]*model_i.model_probability #mixing probability
                 model_j.mixed_state = model_j.mixed_state + (self.model_transition_matrix[j][i] @ (model_i.updated_state * mu_ij))
 
         # Execute Kalman Filter for each model
@@ -114,7 +123,7 @@ class InteractingMultipleModel:
 
         # Update likelihood for each model
         for j, model_j in enumerate(self.models):
-            Z_j = measured_pose - model_j.H @ model_j.predicted_state
+            Z_j = measured_pose - model_j.H @ model_j.predicted_state # TODO: ist das ok so? oder sollte das irgendwie mit a und F gemacht werden?
             ic(model_j.H @ model_j.predicted_state)
             ic(model_j.H)
             ic(model_j.predicted_state)

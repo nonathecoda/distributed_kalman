@@ -3,7 +3,7 @@ import numpy as np
 import sys
 from classes.kalman import KalmanFilter
 
-class Orbit_Model(KalmanFilter):
+class Const_Turn_Model(KalmanFilter):
     '''
     constant velocity,
     constant turn rate,
@@ -27,7 +27,7 @@ class Orbit_Model(KalmanFilter):
 
     @dt.setter
     def dt(self, dt):
-        w = np.pi/5
+        w = np.pi/100000
         print("Orbit model")
         ic(dt)
         self.state_transition_matrix =  np.array([[1,    np.sin(w*dt)/w,        0,      -((1-np.cos(w*dt))/w),  0],

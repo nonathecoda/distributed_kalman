@@ -20,6 +20,9 @@ class Plotter():
         self.x_m = [0]
         self.x_f = [0]
         self.x_r = [initial_pos[0]]
+        self.y_m = [0]
+        self.y_f = [0]
+        self.y_r = [initial_pos[1]]
         # data points velocity
         self.vx_m = [0]
         self.vx_f = [0]
@@ -37,10 +40,11 @@ class Plotter():
         self.model1 = [0]
         self.model2 = [0]
         self.model3 = [0]
+        self.model4 = [0]
 
         # subplot x position
         fig.add_subplot(3, 2, 1)
-        plt.axis([0, 300, -100, 5000])
+        plt.axis([0, 50, -100, 1000])
         self.ln_x_m, = plt.plot(self.time, self.x_m, '-', label = 'measured')
         self.ln_x_f, = plt.plot(self.time, self.x_f, '-', label = 'filtered')
         self.ln_x_r, = plt.plot(self.time, self.x_r, '-', label = 'real')
@@ -49,7 +53,7 @@ class Plotter():
 
         # subplot x velocity
         fig.add_subplot(3, 2, 2)
-        plt.axis([0, 300, -100, 200])
+        plt.axis([0, 50, -100, 200])
         self.ln_vx_m, = plt.plot(self.time, self.vx_m, '-', label = 'measured')
         self.ln_vx_f, = plt.plot(self.time, self.vx_f, '-', label = 'filtered')
         self.ln_vx_r, = plt.plot(self.time, self.vx_r, '-', label = 'real')
@@ -58,7 +62,7 @@ class Plotter():
 
         # subplot x acceleration
         fig.add_subplot(3, 2, 3)
-        plt.axis([0, 300, -10, 10])
+        plt.axis([0, 50, -10, 10])
         #self.ln_ax_f, = plt.plot(self.time, self.ax_f, '-', label = 'filtered')
         self.ln_ax_r, = plt.plot(self.time, self.ax_r, '-', label = 'real')
         plt.legend(handles=[self.ln_ax_r])
@@ -66,7 +70,7 @@ class Plotter():
 
         # subplot x error
         fig.add_subplot(3, 2, 4)
-        plt.axis([0, 300, 0, 50])
+        plt.axis([0, 50, 0, 50])
         self.ln_error_x, = plt.plot(self.time, self.error_x, '-', label = 'x position error', color='red')
         self.ln_error_vx, = plt.plot(self.time, self.error_vx, '-', label = 'x velocity error', color='blue')
         #self.ln_error_ax, = plt.plot(self.time, self.error_ax, '-', label = 'x acceleration error', color='green')
@@ -75,16 +79,22 @@ class Plotter():
 
         #subplot model probabilities
         fig.add_subplot(3, 2, 5)
-        plt.axis([0, 300, -0.1, 1.1])
+        plt.axis([0, 50, -0.1, 1.1])
         self.ln_model_1, = plt.plot(self.time, self.model1, '-', label = 'cv')
         self.ln_model_2, = plt.plot(self.time, self.model2, '-', label = 'ca')
-        self.ln_model_3, = plt.plot(self.time, self.model3, '-', label = 'orbit')
-        plt.legend(handles=[self.ln_model_1, self.ln_model_2, self.ln_model_3])
+        self.ln_model_3, = plt.plot(self.time, self.model3, '-', label = 'turn')
+        self.ln_model_4, = plt.plot(self.time, self.model4, '-', label = 'cp')
+        plt.legend(handles=[self.ln_model_1, self.ln_model_2, self.ln_model_3, self.ln_model_4])
         plt.title('Model probabilities')
 
         fig.add_subplot(3, 2, 6)
-        
-        self.covariance = plt.imshow(np.identity(9), cmap='PiYG', interpolation='nearest')
+        # subplot z position
+        plt.axis([0, 50, -100, 1000])
+        self.ln_y_m, = plt.plot(self.time, self.y_m, '-', label = 'measured')
+        self.ln_y_f, = plt.plot(self.time, self.y_f, '-', label = 'filtered')
+        self.ln_y_r, = plt.plot(self.time, self.y_r, '-', label = 'real')
+        plt.legend(handles=[self.ln_y_f, self.ln_y_r, self.ln_y_m])
+        plt.title('z position')
 
         plt.ion()
         print('Initialised Plotter')
@@ -104,6 +114,14 @@ class Plotter():
         self.ln_x_m.set_data(self.time, self.x_m)
         self.ln_x_r.set_data(self.time, self.x_r)
         self.ln_x_f.set_data(self.time, self.x_f)
+
+        # Plotting y position
+        self.y_m.append(measurements[2])
+        self.y_f.append(filtered_pose[4])
+        self.y_r.append(real_position[2])
+        self.ln_y_m.set_data(self.time, self.y_m)
+        self.ln_y_r.set_data(self.time, self.y_r)
+        self.ln_y_f.set_data(self.time, self.y_f)
         
         # Plotting x velocity
         self.vx_m.append(measurements[1])
@@ -141,6 +159,8 @@ class Plotter():
         self.ln_model_2.set_data(self.time, self.model2)
         self.model3.append(models[2].model_probability)
         self.ln_model_3.set_data(self.time, self.model3)
+        self.model4.append(models[3].model_probability)
+        self.ln_model_4.set_data(self.time, self.model4)
 
-        # Plotting covariance
-        self.covariance.set_data(models[0].microgain/100)
+        
+        

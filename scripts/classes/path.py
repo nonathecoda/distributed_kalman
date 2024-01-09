@@ -173,3 +173,123 @@ def get_orbit(w, initial_pos, initial_vel, initial_accel, dt):
 
 
     return coordinates, velocities, accelerations, timestamps
+
+def get_waypoint_maneuver(initial_pos, initial_vel, initial_accel, dt):
+    # initial_pos: initial position of the object (3d vector)
+    # initial_vel: initial velocity of the object (3d vector)
+    # initial_accel: initial acceleration of the object (3d vector)
+    # dt: time step
+    # return: coordinates, velocities, accelerations, timestamps
+
+    coordinates = np.zeros((3, 3000), dtype = float)
+    velocities = np.zeros((3, 3000), dtype = float)
+    accelerations = np.zeros((3, 3000), dtype = float)
+    timestamps = np.zeros((3000), dtype = float)
+
+    for i in range(3000):
+        if i == 0:
+            coordinates[:, i] = initial_pos
+            velocities[:, i] = initial_vel
+            accelerations[:, i] = initial_accel
+            timestamps[i] = 0
+        elif i < 30:
+            #cv
+            coordinates[:, i] = coordinates[:, i-1] + velocities[:, i-1] * dt
+            velocities[:, i] = velocities[:, i-1]
+            accelerations[:, i] = 0
+            timestamps[i] = timestamps[i-1] + dt 
+            
+        elif i >= 30 and i < 50:
+            #stop
+            coordinates[:, i] = coordinates[:, i-1] 
+            velocities[:, i] = 0
+            accelerations[:, i] = 0
+            timestamps[i] = timestamps[i-1] + dt 
+        
+        elif i == 50:
+            #start
+            coordinates[:, i] = coordinates[:, i-1] + velocities[:, i-1] * dt
+            coordinates[0, i] = coordinates[0, i-1] +0.5* velocities[0, i-1] * dt
+            velocities[:, i] = initial_vel
+            accelerations[:, i] = 0
+            timestamps[i] = timestamps[i-1] + dt 
+
+        elif i > 50 and i < 90:
+            #cv
+            coordinates[:, i] = coordinates[:, i-1] + velocities[:, i-1] * dt
+            coordinates[0, i] = coordinates[0, i-1] +0.5*velocities[0, i-1] * dt
+            velocities[:, i] = velocities[:, i-1]
+            timestamps[i] = timestamps[i-1] + dt 
+        
+        elif i >= 90 and i < 150:
+            #stop
+            coordinates[:, i] = coordinates[:, i-1] 
+            velocities[:, i] = 0
+            timestamps[i] = timestamps[i-1] + dt 
+        
+        elif i == 150:
+            #start
+            coordinates[:, i] = coordinates[:, i-1] + velocities[:, i-1] * dt
+            velocities[:, i] = initial_vel
+            timestamps[i] = timestamps[i-1] + dt 
+
+        elif i > 150:
+            #cv
+            coordinates[:, i] = coordinates[:, i-1] + velocities[:, i-1] * dt
+            velocities[:, i] = velocities[:, i-1]
+            timestamps[i] = timestamps[i-1] + dt 
+
+    return coordinates, velocities, accelerations, timestamps
+
+
+def get_ascending_maneuver(initial_pos, initial_vel, initial_accel, dt):
+    # initial_pos: initial position of the object (3d vector)
+    # initial_vel: initial velocity of the object (3d vector)
+    # initial_accel: initial acceleration of the object (3d vector)
+    # dt: time step
+    # return: coordinates, velocities, accelerations, timestamps
+
+    coordinates = np.zeros((3, 3000), dtype = float)
+    velocities = np.zeros((3, 3000), dtype = float)
+    accelerations = np.zeros((3, 3000), dtype = float)
+    timestamps = np.zeros((3000), dtype = float)
+
+    for i in range(3000):
+        if i == 0:
+            coordinates[:, i] = initial_pos
+            velocities[:, i] = initial_vel
+            accelerations[:, i] = initial_accel
+            timestamps[i] = 0
+        elif i < 20:
+            #stop
+            coordinates[:, i] = coordinates[:, i-1] 
+            velocities[:, i] = 0
+            accelerations[:, i] = 0
+            timestamps[i] = timestamps[i-1] + dt 
+        elif i == 20:
+            #start
+            coordinates[:, i] = coordinates[:, i-1] + velocities[:, i-1] * dt
+            velocities[2, i] = initial_vel[2]
+            timestamps[i] = timestamps[i-1] + dt
+        elif i > 20 and i < 40:
+            #ascend (CA)
+            coordinates[:, i] = coordinates[:, i-1] 
+            coordinates[2, i] = coordinates[2, i-1] + velocities[2, i-1] * dt + accelerations[2, i-1] * dt**2
+            
+            velocities[2, i] = velocities[2, i-1] + accelerations[2, i-1] * dt
+            accelerations[2, i] = initial_accel[2]
+
+            timestamps[i] = timestamps[i-1] + dt 
+        elif i >= 40 and i < 70:
+            #cv
+            coordinates[:, i] = coordinates[:, i-1] + velocities[:, i-1] * dt
+            velocities[:, i] = velocities[:, i-1]
+            accelerations[:, i] = 0
+            timestamps[i] = timestamps[i-1] + dt
+        
+        elif i >= 70:
+            #stop
+            coordinates[:, i] = coordinates[:, i-1] 
+            timestamps[i] = timestamps[i-1] + dt 
+    
+    return coordinates, velocities, accelerations, timestamps

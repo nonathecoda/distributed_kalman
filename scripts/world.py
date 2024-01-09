@@ -9,11 +9,12 @@ from classes.target import Target
 from classes.camera import Camera
 from classes.imm import InteractingMultipleModel
 from kinetic_models.const_velocity import CV_CYPR_Model
-from classes.path import get_figure_eight, get_constant_acceleration, get_constant_velocity, get_constant_turn, get_ca_orbit_cv, get_orbit
+from classes.path import get_figure_eight, get_constant_acceleration, get_constant_velocity, get_constant_turn, get_ca_orbit_cv, get_orbit, get_waypoint_maneuver, get_ascending_maneuver
 from plotters.plotter_ca import Plotter_CA
 from plotters.plotter import Plotter
 from plotters.plotter_cv import Plotter_CV
 from plotters.plotter_ct import Plotter_CT
+from plotters.plot_model_probs import Plotter_Model_Probs
 
 class World():
     def __init__(self):
@@ -23,16 +24,17 @@ class World():
         w = np.pi/5
 
         # create path
-        initial_pos = np.array([200, 2, 50]) #m
+        initial_pos = np.array([55, 2, 3]) #m
         initial_vel = np.array([20, 25, 25]) #m/dt*seconds
         initial_accel = np.array([5, 5, 5]) #m/(dt*seconds)^2
 
         self.dt = 0.1 #seconds
-        self.coordinates, self.velocities, self.accelerations, self.timestamps = get_ca_orbit_cv(w, initial_pos, initial_vel, initial_accel, self.dt)
+        self.coordinates, self.velocities, self.accelerations, self.timestamps = get_ascending_maneuver(initial_pos, initial_vel, initial_accel, self.dt)
+        
         #self.coordinates, self.velocities, self.accelerations, self.timestamps = get_figure_eight(dt = self.dt)
 
         # create cameras
-        N_CAMERAS = 2
+        N_CAMERAS = 8
         SENSOR_NOISE = 5
         if N_CAMERAS > 1:
             self.distributed = True
@@ -44,25 +46,28 @@ class World():
         self.target = Target("target", initial_pos = initial_pos)
 
         # create plotter for graphs
-        #self.plotter = Plotter(initial_pos, initial_vel, initial_accel)
+        
         self.plotter = Plotter(initial_pos, initial_vel, initial_accel)
+        #self.plotter_model_probs = Plotter_Model_Probs(initial_pos, initial_vel, initial_accel)
+        self.plotter_cv = Plotter_CV(initial_pos, initial_vel, initial_accel)
 
         # create animation
-        fig = plt.figure(figsize=(2, 2))
+        
+        fig = plt.figure(figsize=(6, 6))
         ax = fig.add_subplot(projection='3d')
-        self.line_real, = ax.plot(self.coordinates[0, 0:1], self.coordinates[1, 0:1], self.coordinates[2, 0:1])
-        self.line_filtered, = ax.plot(self.coordinates[0, 0:1], self.coordinates[1, 0:1], self.coordinates[2, 0:1])
-
+        self.line_real, = ax.plot(self.coordinates[0, 0:1], self.coordinates[1, 0:1], self.coordinates[2, 0:1], label = 'Real Path')
+        self.line_filtered, = ax.plot(self.coordinates[0, 0:1], self.coordinates[1, 0:1], self.coordinates[2, 0:1], label = 'Filtered Path')
+        plt.legend(handles=[self.line_real, self.line_filtered])
         self.filtered_coordinates = np.zeros((3, 3000), dtype = float)
         
-        ax.set_xlim3d([-1.0, 4000.0])
-        ax.set_xlabel('X')
+        ax.set_xlim3d([0.0, 100.0])
+        ax.set_xlabel('X (m)')
 
-        ax.set_ylim3d([-1.0, 4000.0])
-        ax.set_ylabel('Y')
+        ax.set_ylim3d([0.0, 100.0])
+        ax.set_ylabel('Y (m)')
 
-        ax.set_zlim3d([0.0, 4000.0])
-        ax.set_zlabel('Z')
+        ax.set_zlim3d([0.0, 200.0])
+        ax.set_zlabel('Z (m)')
         
         for k in range(0, self.coordinates.shape[1]):
             self.update_world(k)
@@ -96,7 +101,7 @@ class World():
                 round = 0
                 while consensus_reached == False:
                     #print("Distributed consensus round " + str(round))
-                    if round == 100:
+                    if round == 500:
                         print("Consensus not reached after 100 rounds")
                         exit()
                     round += 1
@@ -122,19 +127,17 @@ class World():
                     model.avg_F = None
             
             self.plotter.update_plot(cam.get_measurements().flatten(), filtered_pose.flatten(), self.target.get_position(), self.target.get_velocity(), self.target.get_acceleration(), self.timestamps[k], models)
-            
-            
+            self.plotter_cv.update_plot(cam.get_measurements().flatten(), filtered_pose.flatten(), self.target.get_position(), self.target.get_velocity(), self.target.get_acceleration(), self.timestamps[k], models)
+            #self.plotter_model_probs.update_plot(self.timestamps[k], models)
             #update 3d animation with filtered pose
             self.filtered_coordinates[:, k] = ([filtered_pose[0], filtered_pose[2], filtered_pose[4]])
-            self.line_filtered.set_data(self.filtered_coordinates[:2, :k])
-            self.line_filtered.set_3d_properties(self.filtered_coordinates[2, :k])
-
-            
-        
+            self.line_filtered.set_data(self.filtered_coordinates[:2, 3:k])
+            self.line_filtered.set_3d_properties(self.filtered_coordinates[2, 3:k])
+            ic(k)
+           
         plt.pause(0.01) # this updates both plots
         
         if k == 3000-1:
-        #if k == 3:
             plt.close()
             exit()
         
