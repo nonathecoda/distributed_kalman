@@ -35,9 +35,11 @@ class KalmanFilter():
         #Distributed stuff
         self.received_a = []
         self.received_F = []
+        self.received_y = []
 
         self.avg_a = None
         self.avg_F = None
+        self.avg_y = None
 
 
     def predict(self, dt):

@@ -27,7 +27,7 @@ class Const_Turn_Model(KalmanFilter):
 
     @dt.setter
     def dt(self, dt):
-        w = np.pi/100000
+        w = np.pi/5
         print("Orbit model")
         ic(dt)
         self.state_transition_matrix =  np.array([[1,    np.sin(w*dt)/w,        0,      -((1-np.cos(w*dt))/w),  0],

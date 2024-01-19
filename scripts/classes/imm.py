@@ -123,7 +123,8 @@ class InteractingMultipleModel:
 
         # Update likelihood for each model
         for j, model_j in enumerate(self.models):
-            Z_j = measured_pose - model_j.H @ model_j.predicted_state # TODO: ist das ok so? oder sollte das irgendwie mit a und F gemacht werden?
+            #Z_j = measured_pose - model_j.H @ model_j.predicted_state
+            Z_j = model_j.avg_y - model_j.H @ model_j.predicted_state
             ic(model_j.H @ model_j.predicted_state)
             ic(model_j.H)
             ic(model_j.predicted_state)

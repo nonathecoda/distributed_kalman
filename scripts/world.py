@@ -29,7 +29,7 @@ class World():
         initial_accel = np.array([5, 5, 5]) #m/(dt*seconds)^2
 
         self.dt = 0.1 #seconds
-        self.coordinates, self.velocities, self.accelerations, self.timestamps = get_ascending_maneuver(initial_pos, initial_vel, initial_accel, self.dt)
+        self.coordinates, self.velocities, self.accelerations, self.timestamps = get_ca_orbit_cv(w, initial_pos, initial_vel, initial_accel, self.dt)
         
         #self.coordinates, self.velocities, self.accelerations, self.timestamps = get_figure_eight(dt = self.dt)
 

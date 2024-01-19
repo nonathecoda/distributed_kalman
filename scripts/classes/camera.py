@@ -14,9 +14,6 @@ class Camera():
         self.acceleration_measurement = None
         self.neighbors = []
 
-        self.received_a = []
-        self.received_F = []
-
         self.imm = InteractingMultipleModel(camera = self, initial_target_state = initial_target_state)
 
     def take_position_measurement(self, target_position):
@@ -40,29 +37,30 @@ class Camera():
     def send_messages_imm(self):
         for model in self.imm.models:
             if model.avg_a is None and model.avg_F is None:
+                model.avg_y = self.get_measurements()
                 model.avg_a = np.transpose(model.H) @ np.linalg.inv(model.R) @ self.get_measurements()
                 model.avg_F = np.transpose(model.H) @ np.linalg.inv(model.R) @ model.H
-                ic(self.name)
-                ic(model.name)
-                ic(model.avg_a)
-                ic(model.avg_F)
                 
         for model in self.imm.models:
             model.received_a.append(model.avg_a)
             model.received_F.append(model.avg_F)
+            model.received_y.append(model.avg_y)
     
 
         for n in self.neighbors:
             for m_index in range(len(n.imm.models)):
                 n.imm.models[m_index].received_a.append(self.imm.models[m_index].avg_a)
                 n.imm.models[m_index].received_F.append(self.imm.models[m_index].avg_F)
+                n.imm.models[m_index].received_y.append(self.imm.models[m_index].avg_y)
 
     def calculate_average_consensus(self):
         for model in self.imm.models:
             
             model.avg_a = np.sum(model.received_a, axis=0) / len(model.received_a)
             model.avg_F = np.sum(model.received_F, axis=0) / len(model.received_a)
+            model.avg_y = np.sum(model.received_y, axis=0) / len(model.received_y)
 
             model.received_a = []
             model.received_F = []
+            model.received_y = []
             
